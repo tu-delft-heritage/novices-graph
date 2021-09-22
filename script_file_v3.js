@@ -61,7 +61,6 @@ Promise.all([
         showInLegend: true,
         name: "Percentage",
         xValueFormatString: "YYYY",
-        // percentFormatString: "##.#%",
         yValueFormatString: "##.#%",
         toolTipContent: " {x} </br> {y} at TU Delft",
         dataPoints: fem_perc
@@ -72,15 +71,50 @@ Promise.all([
             text: "Women at the TU Delft",
             fontSize: 32
         },
-        height:2000,
-        width:2000,
+        height:1500,
+        width:1500,
         axisX:{
             title: "Year",
             interval: 5,
             intervalType: "year",
             labelAutoFit: true,
             titleFontSize: 32,
-            labelFontSize: 20
+            labelFontSize: 20,
+            stripLines: [
+                {   
+                    label: "First worldwar",
+                    startValue: new Date(1914,0),
+                    endValue: new Date(1918,0),
+                    labelFontSize: 20,
+                    labelBackgroundColor: "#ffffff00", // Transparent background for text
+                    labelAlign: "center", // near, center or far
+                    lineDashType: "solid",                
+                    color:"#d8d8d8",
+                    opacity: .8
+                },
+                {   
+                    label: "Second worldwar",
+                    startValue: new Date(1938,0),
+                    endValue: new Date(1945,0),
+                    labelFontSize: 20,
+                    labelBackgroundColor: "#ffffff00", // Transparent background for text
+                    labelAlign: "center", // near, center or far
+                    lineDashType: "solid",                
+                    color:"#d8d8d8",
+                    opacity: .8
+                },
+                {
+                    label: "oil crisis",
+                    value: new Date(1973,0),
+                    thickness: 5,
+                    labelFontSize: 20,
+                    labelBackgroundColor: "#ffffff00", // Transparent background for text
+                    labelAlign: "center", // near, center or far
+                    lineDashType: "dash",                
+                    color:"#d8d8d8",
+                    opacity: .8
+                }
+            ]
         },
         axisY:{
             title: "Amount per program",
@@ -117,10 +151,9 @@ Promise.all([
         data: studies
     });
 
+
+
     chart.render();
-
-
-
 
 
 });
