@@ -113,6 +113,17 @@ Promise.all([
                     lineDashType: "dash",                
                     color:"#d8d8d8",
                     opacity: .8
+                },
+                {
+                    label: "Intoduction of Bachelor Master system",
+                    value: new Date(2002,0),
+                    thickness: 5,
+                    labelFontSize: 20,
+                    labelBackgroundColor: "#ffffff00", // Transparent background for text
+                    labelAlign: "center", // near, center or far
+                    lineDashType: "dash",                
+                    color:"#d8d8d8",
+                    opacity: .8
                 }
             ]
         },
