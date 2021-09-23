@@ -5,7 +5,7 @@ let options;
 
 Promise.all([
     d3.json("male_at_tu.json"),
-    d3.json("female_at_tu.json")
+    d3.json("female_at_tu_cheat.json")
 ]).then(function(data){
     data_men = data[0];
     data_fem = data[1];
