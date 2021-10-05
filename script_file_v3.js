@@ -49,7 +49,7 @@ Promise.all([
                 showInLegend: true,
                 name: Object.keys(data_fem)[i], 
                 xValueFormatString: "YYYY",
-                toolTipContent: "{x} </br> {name}: {y} Female students",
+                // toolTipContent: "{x} </br> {name}: {y} Female students",
                 dataPoints: d_points
           })
         }
@@ -62,7 +62,7 @@ Promise.all([
         name: "Percentage",
         xValueFormatString: "YYYY",
         yValueFormatString: "##.#%",
-        toolTipContent: " {x} </br> {y} at TU Delft",
+        // toolTipContent: " {x} </br> {y} at TU Delft",
         dataPoints: fem_perc
     });
 
@@ -147,17 +147,23 @@ Promise.all([
         toolTip:{
             enabled: true,
             animationEnabled: true,
-            shared: false, 
-            // contentFormatter: function(e) {
-            //     let str = e.entries[0].dataPoint.y + "<br/>";
-            //     for(let i = 0; i < e.entries.length; i++){
-            //         if(e.entries[i]){
-            //             let temp = ("<span style='color:" +e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name+ "</span>: " + e.entries[i].dataPoint.y);
-            //             str = str.concat(temp + "<br/>");
-            //         }
-            //     }
-            //     return(str)
-            // }
+            shared: true, 
+            contentFormatter: function(e) {
+                var str = "";
+                for (var i = 0; i < e.entries.length; i++){
+                    if(e.entries[i].dataPoint.y != 0){
+                        if(e.entries[i].dataSeries.name == "Percentage"){
+                            var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name + "<strong> "+ Math.round(e.entries[i].dataPoint.y*1000)/10 + "%</strong> <br/> </p>";
+                            str = str.concat(temp);
+                        } else{
+                            var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name + ": <strong>"+ e.entries[i].dataPoint.y + "</strong> Female students<br/> </p>";
+                            str = str.concat(temp);
+                        }
+                        
+                    }
+                }
+                return (str)
+            }
         },
         data: studies
     });
