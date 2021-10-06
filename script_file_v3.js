@@ -87,7 +87,7 @@ Promise.all([
                     endValue: new Date(1918,0),
                     labelFontSize: 20,
                     labelBackgroundColor: "#ffffff00", // Transparent background for text
-                    labelAlign: "center", // near, center or far
+                    labelAlign: "center", // near, center or far. Vertical position
                     lineDashType: "solid",                
                     color:"#d8d8d8",
                     opacity: .8
@@ -98,7 +98,7 @@ Promise.all([
                     endValue: new Date(1945,0),
                     labelFontSize: 20,
                     labelBackgroundColor: "#ffffff00", // Transparent background for text
-                    labelAlign: "center", // near, center or far
+                    labelAlign: "center", // near, center or far. Vertical position
                     lineDashType: "solid",                
                     color:"#d8d8d8",
                     opacity: .8
@@ -109,7 +109,7 @@ Promise.all([
                     thickness: 5,
                     labelFontSize: 20,
                     labelBackgroundColor: "#ffffff00", // Transparent background for text
-                    labelAlign: "center", // near, center or far
+                    labelAlign: "center", // near, center or far. Vertical position
                     lineDashType: "dash",                
                     color:"#d8d8d8",
                     opacity: .8
@@ -120,7 +120,7 @@ Promise.all([
                     thickness: 5,
                     labelFontSize: 20,
                     labelBackgroundColor: "#ffffff00", // Transparent background for text
-                    labelAlign: "center", // near, center or far
+                    labelAlign: "center", // near, center or far. Vertical position
                     lineDashType: "dash",                
                     color:"#d8d8d8",
                     opacity: .8
@@ -150,6 +150,8 @@ Promise.all([
             shared: true, 
             contentFormatter: function(e) {     // Custom formatter for tooltip
                 var str = "";
+                temp = "<strong>" + e.entries[1].dataPoint.x.getFullYear() + "</strong>";
+                str = str.concat(temp);
                 for (var i = 0; i < e.entries.length; i++){
                     if(e.entries[i].dataPoint.y != 0){
                         if(e.entries[i].dataSeries.name == "Percentage"){       // Specific formatting for percentage
