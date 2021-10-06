@@ -4,16 +4,16 @@ let studies;
 let options;
 
 Promise.all([
-    d3.json("male_at_tu.json"),
-    d3.json("female_at_tu_cheat.json")
+    d3.json("male_at_tu.json"),         // Import male data
+    d3.json("female_at_tu_cheat.json")  // Import female data, "cheat" is normalised so pre 2002 fit with post 2002
 ]).then(function(data){
     data_men = data[0];
     data_fem = data[1];
 
     let fem_perc = [];
-    for(var i = 0; i < Object.values(data_men["Totaal"]).length; i++){
+    for(var i = 0; i < Object.values(data_men["Totaal"]).length; i++){      // Calculate percentage
         var calc_percent = (Object.values(data_fem["Totaal"])[i]/(Object.values(data_men["Totaal"])[i]+Object.values(data_fem["Totaal"])[i]));
-        if (isNaN(calc_percent)){
+        if (isNaN(calc_percent)){   // Replace NAN with 0 (1944 is nan, since there were no students)
             fem_perc.push({
                 x: new Date(Object.keys(data_fem["Totaal"])[i],0),
                 // x: Object.keys(data_fem["Totaal"])[i],
@@ -33,8 +33,8 @@ Promise.all([
     studies = [];
     let exceptions = ["alle lessen", "enkele lessen", "ijker", "nan", "Totaal"];
     for(let i=0; i < Object.keys(data_fem).length; i++) {
-        if(exceptions.includes(Object.keys(data_fem)[i])){
-        } else {
+        if(exceptions.includes(Object.keys(data_fem)[i])){      // Take words from "exceptions" out of the dataset
+        } else {                                                // Enter females per faculty in a temporary array
             let d_points = [];
             for(let j=0; j < Object.values(data_fem[Object.keys(data_fem)[i]]).length; j++) {
                 d_points.push({
@@ -43,7 +43,7 @@ Promise.all([
                     y: Object.values(data_fem[Object.keys(data_fem)[i]])[j]
                 })
             }
-            studies.push({
+            studies.push({  // Enter data and other specifics in graph dataset
                 type: "stackedColumn",
                 axisYType: "primary",
                 showInLegend: true,
@@ -55,7 +55,7 @@ Promise.all([
         }
     };
 
-    studies.push({
+    studies.push({     // Enter calculated percentages in graph dataset
         type: "line",
         axisYType: "secondary",
         showInLegend: true,
@@ -66,7 +66,7 @@ Promise.all([
         dataPoints: fem_perc
     });
 
-    const chart = new CanvasJS.Chart(plot,{
+    const chart = new CanvasJS.Chart(plot,{     // Graph properties
         title :{
             text: "Women at the TU Delft",
             fontSize: 32
@@ -80,7 +80,7 @@ Promise.all([
             labelAutoFit: true,
             titleFontSize: 32,
             labelFontSize: 20,
-            stripLines: [
+            stripLines: [       // Vertical lines with specific information
                 {   
                     label: "First worldwar",
                     startValue: new Date(1914,0),
@@ -127,13 +127,13 @@ Promise.all([
                 }
             ]
         },
-        axisY:{
+        axisY:{     // First Y-axis
             title: "Amount per program",
             labelAutoFit: true,
             titleFontSize: 28,
             labelFontSize: 20
         },
-        axisY2:{
+        axisY2:{    // Second Y-axis
             title: "Total percentage",
             valueFormatString: "##.#%",
             minimum: 0,
@@ -144,18 +144,18 @@ Promise.all([
         legend: {
             fontSize:20
         },
-        toolTip:{
+        toolTip:{   // Tooltip properties
             enabled: true,
             animationEnabled: true,
             shared: true, 
-            contentFormatter: function(e) {
+            contentFormatter: function(e) {     // Custom formatter for tooltip
                 var str = "";
                 for (var i = 0; i < e.entries.length; i++){
                     if(e.entries[i].dataPoint.y != 0){
-                        if(e.entries[i].dataSeries.name == "Percentage"){
+                        if(e.entries[i].dataSeries.name == "Percentage"){       // Specific formatting for percentage
                             var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name + "<strong> "+ Math.round(e.entries[i].dataPoint.y*1000)/10 + "%</strong> <br/> </p>";
                             str = str.concat(temp);
-                        } else{
+                        } else{         // Specific formatting for other data
                             var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name + ": <strong>"+ e.entries[i].dataPoint.y + "</strong> Female students<br/> </p>";
                             str = str.concat(temp);
                         }
@@ -165,12 +165,12 @@ Promise.all([
                 return (str)
             }
         },
-        data: studies
+        data: studies       // Add the data to the CanvasJS properties
     });
 
 
 
-    chart.render();
+    chart.render();         // Render data
 
 
 });
