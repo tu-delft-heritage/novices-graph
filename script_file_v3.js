@@ -71,10 +71,12 @@ Promise.all([
             title: "Year",
             intervalType: "year",
             labelAutoFit: true,
-            maximum: new Date(2012,0), // Maximum x-value
+            labelWrap: false,
+            labelAngle: 45,
+            // maximum: new Date(2012,0), // Maximum x-value
             stripLines: [       // Vertical lines with specific information
                 {   
-                    label: "First worldwar",
+                    label: "First Worldwar",
                     startValue: new Date(1914,0),
                     endValue: new Date(1918,0),
                     labelFontSize: 20,
@@ -85,7 +87,7 @@ Promise.all([
                     opacity: .8
                 },
                 {   
-                    label: "Second worldwar",
+                    label: "Second Worldwar",
                     startValue: new Date(1938,0),
                     endValue: new Date(1945,0),
                     labelFontSize: 20,
@@ -96,7 +98,7 @@ Promise.all([
                     opacity: .8
                 },
                 {
-                    label: "oil crisis",
+                    label: "Oil Crisis",
                     value: new Date(1973,0),
                     thickness: 5,
                     labelFontSize: 20,
@@ -122,11 +124,11 @@ Promise.all([
             ]
         },
         axisY:{     // First Y-axis
-            title: "Amount per program",
+            title: "Amount per Program",
             labelAutoFit: true,
         },
         axisY2:{    // Second Y-axis
-            title: "Total percentage",
+            title: "Total Percentage",
             valueFormatString: "##.#%",
             minimum: 0,
             maximum: .35,
@@ -145,7 +147,7 @@ Promise.all([
                 for (var i = 0; i < e.entries.length; i++){
                     if(e.entries[i].dataPoint.y != 0){
                         if(e.entries[i].dataSeries.name == "Percentage"){       // Specific formatting for percentage
-                            var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + "<strong>"+ Math.round(e.entries[i].dataPoint.y*1000)/10 + "%</strong> Vrouwen<br/> </p>";
+                            var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + "<strong>"+ Math.round(e.entries[i].dataPoint.y*1000)/10 + "%</strong> Female<br/> </p>";
                             str = str.concat(temp);
                         } else{         // Specific formatting for other data
                             var temp = "<p style='color:" + e.entries[i].dataSeries.color + "'>" + e.entries[i].dataSeries.name + ": <strong>"+ e.entries[i].dataPoint.y + "</strong> Female students<br/> </p>";
@@ -153,9 +155,9 @@ Promise.all([
                         }
                     }
                 }
-                var temp = "Totaal: " + data_fem["Totaal"][Number(e.entries[1].dataPoint.x.getFullYear())] + " Vrouwen </br>";
+                var temp = "Total: " + data_fem["Totaal"][Number(e.entries[1].dataPoint.x.getFullYear())] + " Women </br>";
                 str = str.concat(temp);
-                var temp = "Totaal: " + data_men["Totaal"][Number(e.entries[1].dataPoint.x.getFullYear())] + " Mannen </br>";
+                var temp = "Total: " + data_men["Totaal"][Number(e.entries[1].dataPoint.x.getFullYear())] + " Men </br>";
                 str = str.concat(temp);
                 return (str)
             }
