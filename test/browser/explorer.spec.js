@@ -107,7 +107,7 @@ test("mobile layout keeps controls usable without overflowing the page", async (
 test("faculty focus applies to counts, percentages and exports, and reset restores all faculties", async ({page}) => {
   await page.goto("./");
   const dataSection = page.locator(".control-group").filter({has: page.getByRole("heading", {name: "Data", exact: true})});
-  const exportSection = page.locator(".control-group").filter({has: page.getByRole("heading", {name: "Export", exact: true})});
+  const exportSection = page.locator(".control-group").filter({has: page.getByRole("heading", {name: "Image export", exact: true})});
   await expect(dataSection.getByLabel("From", {exact: true})).toBeVisible();
   await expect(exportSection.getByRole("button", {name: "Download SVG"})).toBeVisible();
   const faculty = dataSection.getByLabel("Faculty / afdeling", {exact: true});
