@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {comparisonRows, normalizeData, selectRange} from "../src/components/data.js";
+import {comparisonRows, normalizeData, programmeCount, programmeRows, programmeSum, selectRange} from "../src/components/data.js";
 
 test("joins totals by year, preserves missing values and leaves zero-denominator shares undefined", () => {
   const data = normalizeData(
@@ -98,4 +98,50 @@ test("undefined shares can use zero without changing counts or the underlying da
     assert.deepEqual(gaps.totals.map((d) => d.share), [null, null, 0.25]);
   }
   assert.deepEqual(data, original);
+});
+
+test("new programme views use the chosen counts, retain male-only programmes, and leave incomplete years blank", () => {
+  const data = normalizeData(
+    {Totaal: {2000: 10, 2001: 0, 2002: 4}, Shared: {2000: 2, 2001: 0, 2002: 4}},
+    {Totaal: {2000: 90, 2001: 0, 2002: 20}, Shared: {2000: 6, 2001: 0}, MaleOnly: {2000: 3, 2001: 0, 2002: 0}}
+  );
+  assert.deepEqual(data.programmes, ["Shared", "MaleOnly"]);
+  const men = selectRange(data, 2000, 2002, "", {view: "men", undefinedAsZero: true});
+  assert.deepEqual(men.programmeMissingYears, [2002]);
+  const rows = programmeRows(men, "men");
+  assert.deepEqual(rows.filter((d) => d.year === 2000).map((d) => [d.programme, d.count, d.lower, d.upper]), [
+    ["Shared", 6, 0, 6], ["MaleOnly", 3, 6, 9]
+  ]);
+  assert.equal(programmeSum(men, 2000, "men"), 9);
+  assert.equal(programmeSum(men, 2001, "men"), 0);
+  assert.equal(programmeSum(men, 2002, "men"), null);
+  assert.ok(rows.filter((d) => d.year === 2002).every((d) => d.count === null && d.upper === null));
+  assert.equal(men.totals.at(-1).male, 20);
+
+  const all = selectRange(data, 2000, 2002, "Shared", {view: "all-programmes"});
+  assert.deepEqual(programmeRows(all, "all-programmes").map((d) => d.count), [8, 0, null]);
+  assert.equal(programmeSum(all, 2000, "all-programmes"), 8);
+  // A partial combined count must not silently substitute zero for either sex.
+  assert.equal(programmeCount({count: 4, male: null}, "all-programmes"), null);
+  assert.equal(programmeCount({count: null, male: 3}, "all-programmes"), null);
+  const allCategories = selectRange(data, 2000, 2000, "", {view: "all-programmes"});
+  assert.deepEqual(allCategories.programmeMissingYears, [2000]);
+  assert.ok(programmeRows(allCategories, "all-programmes").every((d) => d.count === null));
+});
+
+test("real programme breakdowns use sums rather than totals and report the 2002–2018 gap", async () => {
+  const read = async (name) => JSON.parse(await readFile(new URL(`../data/${name}`, import.meta.url)));
+  const data = normalizeData(await read("female_at_tu.json"), await read("male_at_tu.json"));
+  for (const [view, firstSum, lastCompleteSum] of [["men", 221, 1939], ["all-programmes", 230, 2474]]) {
+    const range = selectRange(data, 1905, 2018, "", {view, undefinedAsZero: true});
+    assert.deepEqual(range.programmeMissingYears, Array.from({length: 17}, (_, i) => 2002 + i));
+    assert.equal(programmeSum(range, 1905, view), firstSum);
+    assert.equal(programmeSum(range, 1944, view), 0);
+    assert.equal(programmeSum(range, 2001, view), lastCompleteSum);
+    assert.equal(programmeSum(range, 2018, view), null);
+    assert.ok(programmeRows(range, view).filter((d) => d.year >= 2002).every((d) => d.upper === null));
+    assert.equal(range.totals.at(-1).male, 4078);
+    assert.equal(range.totals.at(-1).share, 1853 / 5931);
+    assert.deepEqual(selectRange(data, 1905, 2001, "", {view}).programmeMissingYears, []);
+  }
 });

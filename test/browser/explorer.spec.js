@@ -271,3 +271,75 @@ test("the comparison uses faculty counts and does not invent missing male values
   await page.setViewportSize({width: 390, height: 844});
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+for (const scenario of [
+  {view: "All students by programme", title: /^First-year students by programme/, count: 4, unit: "first-year students", sum: "230", prefix: "students-by-programme-at-tu-delft"},
+  {view: "Men by programme", title: /^Male first-year students/, count: 3, unit: "men", sum: "221", prefix: "men-at-tu-delft"}
+]) {
+  test(`${scenario.view} supports counts, styling, areas, and exports without filling missing years`, async ({page}) => {
+    await page.goto("./");
+    await page.getByLabel("View", {exact: true}).selectOption({label: scenario.view});
+    const chart = page.locator("svg[data-chart]");
+    await expect(chart).toHaveAttribute("aria-label", scenario.title);
+    await expect(page.getByLabel("Colour palette", {exact: true})).toBeVisible();
+    await expect(page.getByLabel("Women colour", {exact: true})).toBeHidden();
+    await expect(page.locator(".selection-note")).toContainText("2002–2018");
+    await expect(page.locator(".stat").nth(1)).toContainText("4,078");
+    await expect(page.locator(".stat").last()).toContainText("Not recorded");
+    const plotTitles = await chart.locator("g[aria-label='rect'] rect title").allTextContents();
+    expect(plotTitles.some((text) => /^2001 ·/.test(text))).toBe(true);
+    expect(plotTitles.some((text) => /^(200[2-9]|201\d) ·/.test(text))).toBe(false);
+    await page.screenshot({path: `test-results/${scenario.prefix}-preview.png`, fullPage: true});
+
+    await page.getByLabel("Inspect year", {exact: true}).selectOption({label: "1905"});
+    await expect(page.locator(".stat").last().locator("strong")).toHaveText(scenario.sum);
+    const bar = chart.locator("rect").filter({has: page.locator("title", {hasText: `1905 · Bouwkunidg ingenieur (Bk)\n${scenario.count} ${scenario.unit}`})});
+    await expect(bar).toHaveCount(1);
+    await page.getByText("Programme colours", {exact: true}).click();
+    await page.getByLabel("Bouwkunidg ingenieur (Bk)", {exact: true}).fill("#117744");
+    await expect(bar).toHaveAttribute("fill", "#117744");
+
+    const pending = page.waitForEvent("download");
+    await page.getByRole("button", {name: "Download SVG", exact: true}).click();
+    const file = await pending;
+    expect(file.suggestedFilename()).toBe(`${scenario.prefix}-1905-2018.svg`);
+    const xml = await readFile(await file.path(), "utf8");
+    expect(xml).toContain("Programme data are incomplete for 2002–2018");
+    expect(xml).toContain(`${scenario.count} ${scenario.unit}`);
+    expect(xml).toContain("#117744");
+    expect(xml).not.toContain("NaN");
+
+    await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked area"});
+    await expect(chart.locator("g[aria-label='area']")).toBeVisible();
+    // The programme area stops at 2001; the percentage line may continue to 2018.
+    const lastX = await chart.locator("g[aria-label='area'] path[d]").evaluateAll((paths) => Math.max(...paths.map((path) => {const box = path.getBBox(); return box.x + box.width;})));
+    expect(lastX).toBeGreaterThan(900);
+    expect(lastX).toBeLessThan(970);
+    await page.getByLabel("To", {exact: true}).selectOption({label: "2001"});
+    await expect(page.locator(".selection-note")).toBeEmpty();
+    await expect(page.getByLabel("Chart title", {exact: true})).toHaveValue(/1905-2001$/);
+    await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Bouwkunidg ingenieur (Bk)"});
+    await page.getByLabel("To", {exact: true}).selectOption({label: "1905"});
+    await page.getByText("Programme breakdown", {exact: true}).click();
+    await expect(page.locator(".breakdown-table tbody tr")).toHaveCount(1);
+    await expect(page.locator(".breakdown-table tbody td").last()).toHaveText(String(scenario.count));
+
+    await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architecture and the Built Environment"});
+    await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
+    await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked bars"});
+    await expect(chart.locator("g[aria-label='rect'] rect title")).toHaveCount(0);
+    await expect(page.locator(".selection-note")).toContainText("incomplete for 2002");
+    await expect(page.locator(".breakdown-table tbody td").last()).toHaveText("Not recorded");
+    await page.getByLabel("Undefined percentages as 0").uncheck();
+    await expect(page.locator(".stat").nth(2)).toContainText("Not defined");
+    await expect(chart.locator("g[aria-label='rect'] rect title")).toHaveCount(0);
+
+    const jsonPending = page.waitForEvent("download");
+    await page.getByRole("button", {name: "Download JSON", exact: true}).click();
+    const jsonFile = await jsonPending;
+    const json = JSON.parse(await readFile(await jsonFile.path(), "utf8"));
+    expect(json.programmes[0]).toMatchObject({year: 2002, female: 153, male: null, female_share: null});
+    await page.setViewportSize({width: 390, height: 844});
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}

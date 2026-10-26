@@ -1,7 +1,7 @@
 import * as Plot from "@observablehq/plot";
 import {axisRight, format, interpolateBlues, scaleLinear, scaleOrdinal, schemeTableau10, select} from "d3";
-import {comparisonRows, EVENTS} from "./data.js";
-import {GRAPH_SOURCES} from "./caption.js";
+import {comparisonRows, EVENTS, programmeRows} from "./data.js";
+import {graphFilename, GRAPH_SOURCES, programmeDataNote} from "./caption.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export const number = format(",d");
@@ -48,8 +48,10 @@ function textBlock(parent, text, x, y, attrs, maxCharacters, lineHeight) {
 /** A single self-contained SVG: Plot marks, D3's independent percentage axis, and export furniture. */
 export function renderChart(data, settings, {onYear} = {}) {
   const combined = settings.view === "both";
-  const series = combined ? ["Women", "Men"] : data.programmes;
-  const rows = combined ? comparisonRows(data) : data.rows;
+  const countLabel = {women: "women", both: "first-year students", "all-programmes": "first-year students", men: "men"}[settings.view];
+  const rows = combined ? comparisonRows(data) : programmeRows(data, settings.view);
+  const series = combined ? ["Women", "Men"] : data.focus ? data.programmes
+    : data.programmes.filter((name) => rows.some((d) => d.programme === name && d.count > 0));
   const showShare = settings.share && (!data.focus || data.totals.some((d) => d.share != null));
   const scope = data.focus ? `, ${data.focus.trim()}` : "";
   const width = settings.width;
@@ -62,7 +64,7 @@ export function renderChart(data, settings, {onYear} = {}) {
   const headerHeight = 52 + titleLines.length * 30 + (subtitleLines.length - 1) * (fontSize + 3);
   const height = settings.height;
   const margin = {top: settings.annotations ? 66 : 38, bottom: 48, left: 70, right: showShare ? 72 : 30};
-  const countMax = Math.max(1, ...(combined ? rows.map((d) => d.upper ?? 0) : data.totals.map((d) => d.programmeTotal ?? 0)));
+  const countMax = Math.max(1, ...rows.map((d) => d.upper ?? 0));
   const y = scaleLinear([0, countMax], [height - margin.bottom, margin.top]).nice();
   const yMax = y.domain()[1];
   const shareMax = Math.max(0.35, Math.ceil(Math.max(0, ...data.totals.map((d) => d.share ?? 0)) * 20) / 20);
@@ -79,18 +81,17 @@ export function renderChart(data, settings, {onYear} = {}) {
     }));
   }
   const markOptions = {
-    x: "year", fill: combined ? "sex" : "programme", z: combined ? "sex" : "programme", fillOpacity: settings.opacity,
+    x: "year", y1: "lower", y2: "upper", fill: combined ? "sex" : "programme", z: combined ? "sex" : "programme", fillOpacity: settings.opacity,
     order: series,
-    title: (d) => `${d.year} · ${combined ? d.sex : d.programme}\n${d.count == null ? "Not recorded" : number(d.count)} ${combined ? "first-year students" : "women"}`
+    title: (d) => `${d.year} · ${combined ? d.sex : d.programme}\n${d.count == null ? "Not recorded" : number(d.count)} ${countLabel}`
   };
-  const stack = (options) => combined ? {...options, y1: "lower", y2: "upper"} : Plot.stackY({...options, y: "count"});
   if (settings.chartType === "area") {
-    marks.push(Plot.areaY(rows, stack({...markOptions, curve: "linear"})));
+    marks.push(Plot.areaY(rows, {...markOptions, curve: "linear"}));
   } else {
     const halfWidth = (1 - settings.barGap) / 2;
-    marks.push(Plot.rectY(rows, stack({
+    marks.push(Plot.rectY(rows, {
       ...markOptions, x1: (d) => d.year - halfWidth, x2: (d) => d.year + halfWidth
-    })));
+    }));
   }
   if (settings.annotations) {
     marks.push(Plot.ruleX(events.filter((d) => d.start === d.end), {
@@ -121,11 +122,11 @@ export function renderChart(data, settings, {onYear} = {}) {
   const svg = svgNode("svg", {
     xmlns: SVG_NS, width, role: "img", "aria-label": `${settings.title}${scope}, ${data.start} to ${data.end}`,
     "font-family": font, "font-size": fontSize, fill: settings.foreground,
-    color: settings.foreground, "data-chart": combined ? "first-year-students-at-tu-delft" : "women-at-tu-delft"
+    color: settings.foreground, "data-chart": graphFilename(settings.view)
   });
   svg.style.cssText = `display:block;background:${settings.background};font-family:${font};color:${settings.foreground}`;
   svg.append(svgNode("title", {}, `${settings.title}${scope}, ${data.start}–${data.end}`));
-  svg.append(svgNode("desc", {}, `${combined ? "Recorded counts of female and male first-year students" : "Counts of female first-year students"}${data.focus ? ` in ${data.focus.trim()}` : combined ? "" : " by programme"}.${showShare ? ` The line uses an independent right axis and shows women as a share of female and male counts in this selection. Undefined percentages ${settings.undefinedAsZero ? "are shown as 0%." : "leave gaps."}` : ""}`));
+  svg.append(svgNode("desc", {}, `${combined ? "Recorded counts of female and male first-year students" : `Counts of ${countLabel}`}${data.focus ? ` in ${data.focus.trim()}` : combined ? "" : " by programme"}.${showShare ? ` The line uses an independent right axis and shows women as a share of female and male counts in this selection. Undefined percentages ${settings.undefinedAsZero ? "are shown as 0%." : "leave gaps."}` : ""}`));
   const background = svgNode("rect", {width, height: 1, fill: settings.background});
   svg.append(background);
   titleLines.forEach((line, i) => svg.append(svgNode("text", {x: 32, y: 40 + i * 30, "font-size": 26, "font-weight": 600}, line)));
@@ -134,7 +135,8 @@ export function renderChart(data, settings, {onYear} = {}) {
   }, line)));
   plot.setAttribute("y", headerHeight);
   svg.append(plot);
-  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, combined ? "First-year students" : data.focus ? "Women" : "Women by programme"));
+  const axisLabel = {women: "Women", both: "First-year students", "all-programmes": "Students", men: "Men"}[settings.view];
+  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, `${axisLabel}${combined || data.focus ? "" : " by programme"}`));
   if (showShare) {
     const axis = select(plot).append("g")
       .attr("data-axis", "share")
@@ -142,7 +144,7 @@ export function renderChart(data, settings, {onYear} = {}) {
       .call(axisRight(scaleLinear([0, shareMax], [height - margin.bottom, margin.top])).ticks(5).tickFormat(format(".0%")));
     axis.attr("font-size", fontSize).attr("font-family", font).attr("color", settings.lineColor);
     axis.select(".domain").remove();
-    plot.append(svgNode("text", {x: width - margin.right, y: 19, "text-anchor": "end", fill: settings.lineColor, "font-weight": 600}, data.focus ? "Share within faculty / afdeling" : "Share of all students"));
+    plot.append(svgNode("text", {x: width - margin.right, y: 19, "text-anchor": "end", fill: settings.lineColor, "font-weight": 600}, data.focus ? "Share of women within faculty / afdeling" : "Share of women"));
   }
   if (settings.annotations) events.forEach((event, i) => {
     const center = x((Math.max(event.start, data.start) + Math.min(event.end, data.end)) / 2);
@@ -179,7 +181,11 @@ export function renderChart(data, settings, {onYear} = {}) {
   cursor += 18;
   cursor += textBlock(svg, `Source: ${GRAPH_SOURCES}`,
     32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
-  if (data.focus && data.totals.every((d) => d.male == null)) {
+  const missingProgrammeNote = programmeDataNote(data);
+  if (missingProgrammeNote) {
+    cursor += textBlock(svg, missingProgrammeNote,
+      32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
+  } else if (data.focus && data.totals.every((d) => d.male == null)) {
     cursor += textBlock(svg,
       `Male counts unavailable; ${showShare && settings.undefinedAsZero ? "undefined percentages shown as 0%." : "percentage not shown."}`,
       32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);

@@ -1,8 +1,8 @@
-import {selectRange} from "./data.js";
+import {programmeCount, programmeSum, selectRange} from "./data.js";
 import {FONTS, number, percent, programmeColors, renderChart} from "./chart.js";
 import {download, jpgBlob, jpgDimensions, svgBlob} from "./export.js";
 import {createDataExport, csvDataBlob, jsonDataBlob} from "./data-export.js";
-import {graphDescription, graphTitle} from "./caption.js";
+import {graphDescription, graphFilename, graphTitle, programmeDataNote} from "./caption.js";
 
 export function defaultSettings(data) {
   return {
@@ -73,7 +73,10 @@ export function createExplorer(data, Inputs) {
 
   const years = data.years.map((year) => [year, String(year)]);
   const dataControls = section("Data");
-  control(dataControls, "view", "View", "select", {choices: [["women", "Women by programme"], ["both", "Women and men"]]});
+  control(dataControls, "view", "View", "select", {choices: [
+    ["women", "Women by programme"], ["both", "Women and men"],
+    ["all-programmes", "All students by programme"], ["men", "Men by programme"]
+  ]});
   control(dataControls, "start", "From", "select", {choices: years});
   control(dataControls, "end", "To", "select", {choices: years});
   control(dataControls, "programme", "Faculty / afdeling", "select", {
@@ -123,6 +126,8 @@ export function createExplorer(data, Inputs) {
 
   function updateInspector(year) {
     const combined = settings.view === "both";
+    const allProgrammes = settings.view === "all-programmes";
+    const menOnly = settings.view === "men";
     const record = visibleData.totals.find((d) => d.year === year);
     if (!record) return;
     selectedYear = year;
@@ -135,10 +140,14 @@ export function createExplorer(data, Inputs) {
       ["Share of women", percent(record.share)],
       ["Women · programme sum", record.programmeTotal == null ? "Not recorded" : number(record.programmeTotal)]
     ];
+    if (allProgrammes || menOnly) {
+      const sum = programmeSum(visibleData, year, settings.view);
+      values[3] = [`${menOnly ? "Men" : "Students"} · programme sum`, sum == null ? "Not recorded" : number(sum)];
+    }
     if (visibleData.focus) {
       values[0][0] = "Women";
       values[1][0] = "Men";
-      if (!combined) values.pop();
+      if (!combined && !allProgrammes) values.pop();
     }
     if (combined) values[3] = ["All students", record.female == null || record.male == null ? "Not recorded" : number(record.female + record.male)];
     stats.classList.toggle("grid-cols-3", values.length === 3);
@@ -149,13 +158,26 @@ export function createExplorer(data, Inputs) {
       stats.append(item);
     }
     const table = element("table", "breakdown-table");
-    table.innerHTML = `<thead><tr><th scope="col">Programme</th><th scope="col">Women</th>${combined ? '<th scope="col">Men</th>' : ""}</tr></thead>`;
+    const columns = menOnly ? [["Men", (d) => d.male]] : [["Women", (d) => d.count]];
+    if (combined || allProgrammes) columns.push(["Men", (d) => d.male]);
+    if (allProgrammes) columns.push(["All students", (d) => programmeCount(d, "all-programmes")]);
+    const header = element("tr");
+    for (const label of ["Programme", ...columns.map(([label]) => label)]) {
+      const th = element("th", "", label);
+      th.scope = "col";
+      header.append(th);
+    }
+    const head = element("thead");
+    head.append(header);
+    table.append(head);
     const body = document.createElement("tbody");
-    const rows = visibleData.rows.filter((d) => d.year === year && (d.count !== 0 || (combined && d.male !== 0))).sort((a, b) => (b.count ?? -1) - (a.count ?? -1));
+    const rows = visibleData.rows.filter((d) => d.year === year && (
+      settings.view === "women" ? d.count !== 0 : visibleData.focus || d.count > 0 || d.male > 0
+    )).sort((a, b) => (programmeCount(b, settings.view) ?? -1) - (programmeCount(a, settings.view) ?? -1));
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      tr.append(element("td", "", row.programme), element("td", "", row.count == null ? "Not recorded" : number(row.count)));
-      if (combined) tr.append(element("td", "", row.male == null ? "Not recorded" : number(row.male)));
+      tr.append(element("td", "", row.programme));
+      for (const [, value] of columns) tr.append(element("td", "", value(row) == null ? "Not recorded" : number(value(row))));
       body.append(tr);
     });
     table.append(body);
@@ -184,8 +206,8 @@ export function createExplorer(data, Inputs) {
       fields.womenColor.hidden = !combined;
       fields.menColor.hidden = !combined;
       root.querySelector(".chart-description").replaceChildren(...graphDescription(settings.view).map((paragraph) => element("p", "", paragraph)));
-      root.querySelector(".selection-note").textContent = range.focus && range.totals.every((d) => d.male == null)
-        ? `Male counts are unavailable for this faculty / afdeling; ${settings.undefinedAsZero ? "undefined percentages are shown as 0%." : "no percentage is shown."}` : "";
+      root.querySelector(".selection-note").textContent = programmeDataNote(range) || (range.focus && range.totals.every((d) => d.male == null)
+        ? `Male counts are unavailable for this faculty / afdeling; ${settings.undefinedAsZero ? "undefined percentages are shown as 0%." : "no percentage is shown."}` : "");
       svg = renderChart(range, settings, {onYear: (year) => {if (selectedYear !== year) updateInspector(year);}});
       chartMount.replaceChildren(svg);
       const rangeKey = `${range.start}-${range.end}`;
@@ -269,7 +291,7 @@ export function createExplorer(data, Inputs) {
       }
       if (disposed) return;
       const faculty = snapshot.programme ? `-${snapshot.programme.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")}` : "";
-      const name = snapshot.view === "both" ? "first-year-students-at-tu-delft" : "women-at-tu-delft";
+      const name = graphFilename(snapshot.view);
       download(blob, `${name}${faculty}-${snapshot.start}-${snapshot.end}.${format}`);
       status.textContent = `${format.toUpperCase()} downloaded.`;
     } catch (error) {
