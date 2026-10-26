@@ -1,5 +1,8 @@
-_site
-.sass-cache
-.jekyll-cache
-.jekyll-metadata
-vendor
+node_modules/
+.pnpm-store/
+dist/
+src/.observablehq/
+src/data/students.json
+playwright-report/
+test-results/
+.DS_Store
