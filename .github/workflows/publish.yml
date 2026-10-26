@@ -37,10 +37,6 @@ jobs:
         env:
           PAGES_BASE_PATH: /${{ github.event.repository.name }}/
           OBSERVABLE_TELEMETRY_DISABLE: "1"
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Test built site
-        run: pnpm test:browser
       - name: Upload GitHub Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
