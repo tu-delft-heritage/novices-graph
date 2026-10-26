@@ -1,11 +1,11 @@
 import * as Plot from "@observablehq/plot";
 import {axisRight, format, interpolateBlues, scaleLinear, scaleOrdinal, schemeTableau10, select} from "d3";
 import {comparisonRows, EVENTS, programmeRows} from "./data.js";
-import {graphFilename, GRAPH_SOURCES, programmeDataNote} from "./caption.js";
+import {graphFilename, graphSources, programmeDataNote} from "./caption.js";
+
+import {formatters, programmeLabel, translate} from "./i18n.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-export const number = format(",d");
-export const percent = (value) => value == null ? "Not defined" : format(".1%")(value);
 export const FONTS = {
   sans: "Arial, Helvetica, sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
@@ -47,19 +47,23 @@ function textBlock(parent, text, x, y, attrs, maxCharacters, lineHeight) {
 
 /** A single self-contained SVG: Plot marks, D3's independent percentage axis, and export furniture. */
 export function renderChart(data, settings, {onYear} = {}) {
+  const language = settings.language ?? "en";
+  const t = (message, values) => translate(language, message, values);
+  const {number, percent, axisPercent} = formatters(language);
   const combined = settings.view === "both";
+  const label = (name) => combined ? t(name) : programmeLabel(name, language);
   const countLabel = {women: "women", both: "first-year students", "all-programmes": "first-year students", men: "men"}[settings.view];
   const rows = combined ? comparisonRows(data) : programmeRows(data, settings.view);
   const series = combined ? ["Women", "Men"] : data.focus ? data.programmes
     : data.programmes.filter((name) => rows.some((d) => d.programme === name && d.count > 0));
   const showShare = settings.share && (!data.focus || data.totals.some((d) => d.share != null));
-  const scope = data.focus ? `, ${data.focus.trim()}` : "";
+  const scope = data.focus ? `, ${programmeLabel(data.focus, language)}` : "";
   const width = settings.width;
   const fontSize = settings.fontSize;
   const font = FONTS[settings.font];
   const colors = combined ? {Women: settings.womenColor, Men: settings.menColor} : programmeColors(data, settings);
   const titleLines = lines(settings.title, Math.floor((width - 80) / 17));
-  const subtitle = `${data.start}–${data.end}${data.focus ? ` · ${data.focus.trim()}` : ""}`;
+  const subtitle = `${data.start}–${data.end}${data.focus ? ` · ${programmeLabel(data.focus, language)}` : ""}`;
   const subtitleLines = lines(subtitle, Math.floor((width - 64) / (fontSize * 0.6)));
   const headerHeight = 52 + titleLines.length * 30 + (subtitleLines.length - 1) * (fontSize + 3);
   const height = settings.height;
@@ -83,7 +87,7 @@ export function renderChart(data, settings, {onYear} = {}) {
   const markOptions = {
     x: "year", y1: "lower", y2: "upper", fill: combined ? "sex" : "programme", z: combined ? "sex" : "programme", fillOpacity: settings.opacity,
     order: series,
-    title: (d) => `${d.year} · ${combined ? d.sex : d.programme}\n${d.count == null ? "Not recorded" : number(d.count)} ${countLabel}`
+    title: (d) => `${d.year} · ${label(combined ? d.sex : d.programme)}\n${d.count == null ? t("Not recorded") : number(d.count)} ${t(countLabel)}`
   };
   if (settings.chartType === "area") {
     marks.push(Plot.areaY(rows, {...markOptions, curve: "linear"}));
@@ -102,7 +106,7 @@ export function renderChart(data, settings, {onYear} = {}) {
     marks.push(Plot.lineY(data.totals, {
       x: "year", y: (d) => d.share == null ? NaN : shareScale(d.share),
       stroke: settings.lineColor, strokeWidth: settings.lineWidth,
-      title: (d) => `${d.year} · ${percent(d.share)} women (${data.focus ? "selected faculty / afdeling" : "recorded totals"})`
+      title: (d) => `${d.year} · ${percent(d.share)} ${t("women")} (${t(data.focus ? "selected faculty / afdeling" : "recorded totals")})`
     }));
     if (data.start === data.end && data.totals[0]?.share != null) {
       marks.push(Plot.dot(data.totals, {x: "year", y: (d) => shareScale(d.share), fill: settings.lineColor, r: 4}));
@@ -113,20 +117,22 @@ export function renderChart(data, settings, {onYear} = {}) {
     width, height,
     marginTop: margin.top, marginBottom: margin.bottom, marginLeft: margin.left, marginRight: margin.right,
     x: {domain: xDomain, label: null, tickFormat: format("d"), ticks: Math.min(12, data.end - data.start + 1)},
-    y: {domain: [0, yMax], label: null, grid: settings.grid, ticks: Math.min(5, yMax)},
+    y: {domain: [0, yMax], label: null, tickFormat: number, grid: settings.grid, ticks: Math.min(5, yMax)},
     color: {domain: series, range: series.map((name) => colors[name])},
     style: {background: "transparent", color: settings.foreground, fontFamily: font, fontSize: `${fontSize}px`},
     marks
   });
   // Plot's embedded styles and all presentation attributes travel with the exported SVG.
   const svg = svgNode("svg", {
-    xmlns: SVG_NS, width, role: "img", "aria-label": `${settings.title}${scope}, ${data.start} to ${data.end}`,
+    xmlns: SVG_NS, lang: language, "xml:lang": language, width, role: "img", "aria-label": `${settings.title}${scope}, ${data.start} ${t("to")} ${data.end}`,
     "font-family": font, "font-size": fontSize, fill: settings.foreground,
     color: settings.foreground, "data-chart": graphFilename(settings.view)
   });
   svg.style.cssText = `display:block;background:${settings.background};font-family:${font};color:${settings.foreground}`;
   svg.append(svgNode("title", {}, `${settings.title}${scope}, ${data.start}–${data.end}`));
-  svg.append(svgNode("desc", {}, `${combined ? "Recorded counts of female and male first-year students" : `Counts of ${countLabel}`}${data.focus ? ` in ${data.focus.trim()}` : combined ? "" : " by programme"}.${showShare ? ` The line uses an independent right axis and shows women as a share of female and male counts in this selection. Undefined percentages ${settings.undefinedAsZero ? "are shown as 0%." : "leave gaps."}` : ""}`));
+  const description = combined ? t("Recorded counts of female and male first-year students") : t("Counts of {unit}", {unit: t(countLabel)});
+  const descriptionScope = data.focus ? t(" in {programme}", {programme: programmeLabel(data.focus, language)}) : combined ? "" : t(" by programme");
+  svg.append(svgNode("desc", {}, `${description}${descriptionScope}.${showShare ? ` ${t("The line uses an independent right axis and shows women as a share of female and male counts in this selection.")} ${t(settings.undefinedAsZero ? "Undefined percentages are shown as 0%." : "Undefined percentages leave gaps.")}` : ""}`));
   const background = svgNode("rect", {width, height: 1, fill: settings.background});
   svg.append(background);
   titleLines.forEach((line, i) => svg.append(svgNode("text", {x: 32, y: 40 + i * 30, "font-size": 26, "font-weight": 600}, line)));
@@ -136,15 +142,15 @@ export function renderChart(data, settings, {onYear} = {}) {
   plot.setAttribute("y", headerHeight);
   svg.append(plot);
   const axisLabel = {women: "Women", both: "First-year students", "all-programmes": "Students", men: "Men"}[settings.view];
-  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, `${axisLabel}${combined || data.focus ? "" : " by programme"}`));
+  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, t(`${axisLabel}${combined || data.focus ? "" : " by programme"}`)));
   if (showShare) {
     const axis = select(plot).append("g")
       .attr("data-axis", "share")
       .attr("transform", `translate(${width - margin.right},0)`)
-      .call(axisRight(scaleLinear([0, shareMax], [height - margin.bottom, margin.top])).ticks(5).tickFormat(format(".0%")));
+      .call(axisRight(scaleLinear([0, shareMax], [height - margin.bottom, margin.top])).ticks(5).tickFormat(axisPercent));
     axis.attr("font-size", fontSize).attr("font-family", font).attr("color", settings.lineColor);
     axis.select(".domain").remove();
-    plot.append(svgNode("text", {x: width - margin.right, y: 19, "text-anchor": "end", fill: settings.lineColor, "font-weight": 600}, data.focus ? "Share of women within faculty / afdeling" : "Share of women"));
+    plot.append(svgNode("text", {x: width - margin.right, y: 19, "text-anchor": "end", fill: settings.lineColor, "font-weight": 600}, t(data.focus ? "Share of women within faculty / afdeling" : "Share of women")));
   }
   if (settings.annotations) events.forEach((event, i) => {
     const center = x((Math.max(event.start, data.start) + Math.min(event.end, data.end)) / 2);
@@ -152,7 +158,7 @@ export function renderChart(data, settings, {onYear} = {}) {
     plot.append(svgNode("text", {
       x: center, y: 39 + (i % 2) * 15, "text-anchor": anchor,
       "font-size": Math.max(10, fontSize - 1), fill: settings.foreground, opacity: 0.65
-    }, event.label));
+    }, t(event.label)));
   });
 
   let cursor = headerHeight + height;
@@ -167,27 +173,27 @@ export function renderChart(data, settings, {onYear} = {}) {
       series.slice(i, i + columns).forEach((name, column) => {
         const left = 32 + column * columnWidth;
         svg.append(svgNode("rect", {x: left, y: cursor - 9, width: 9, height: 9, rx: 2, fill: colors[name], "fill-opacity": settings.opacity}));
-        rowHeight = Math.max(rowHeight, textBlock(svg, name.trim(), left + 17, cursor,
+        rowHeight = Math.max(rowHeight, textBlock(svg, label(name), left + 17, cursor,
           {"font-size": fontSize - 1}, maxCharacters, fontSize + 3));
       });
       cursor += rowHeight + 9;
     }
     if (showShare) {
       svg.append(svgNode("line", {x1: 32, x2: 47, y1: cursor - 4, y2: cursor - 4, stroke: settings.lineColor, "stroke-width": settings.lineWidth}));
-      svg.append(svgNode("text", {x: 55, y: cursor, "font-size": fontSize - 1}, data.focus ? "Share of women within this faculty / afdeling" : "Women as a share of all students (recorded totals)"));
+      svg.append(svgNode("text", {x: 55, y: cursor, "font-size": fontSize - 1}, t(data.focus ? "Share of women within this faculty / afdeling" : "Women as a share of all students (recorded totals)")));
       cursor += 24;
     }
   }
   cursor += 18;
-  cursor += textBlock(svg, `Source: ${GRAPH_SOURCES}`,
+  cursor += textBlock(svg, `${t("Source")}: ${graphSources(language)}`,
     32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
-  const missingProgrammeNote = programmeDataNote(data);
+  const missingProgrammeNote = programmeDataNote(data, language);
   if (missingProgrammeNote) {
     cursor += textBlock(svg, missingProgrammeNote,
       32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
   } else if (data.focus && data.totals.every((d) => d.male == null)) {
     cursor += textBlock(svg,
-      `Male counts unavailable; ${showShare && settings.undefinedAsZero ? "undefined percentages shown as 0%." : "percentage not shown."}`,
+      t(showShare && settings.undefinedAsZero ? "Male counts unavailable; undefined percentages shown as 0%." : "Male counts unavailable; percentage not shown."),
       32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
   }
   const fullHeight = cursor + 16;
