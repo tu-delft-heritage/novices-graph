@@ -1,7 +1,7 @@
 import * as Plot from "@observablehq/plot";
 import {axisRight, format, interpolateBlues, scaleLinear, scaleOrdinal, schemeTableau10, select} from "d3";
 import {comparisonRows, EVENTS, programmeRows} from "./data.js";
-import {graphFilename, graphSources, programmeDataNote} from "./caption.js";
+import {dataNotes, graphFilename, graphSources} from "./caption.js";
 
 import {formatters, programmeLabel, translate} from "./i18n.js";
 
@@ -51,19 +51,20 @@ export function renderChart(data, settings, {onYear} = {}) {
   const t = (message, values) => translate(language, message, values);
   const {number, percent, axisPercent} = formatters(language);
   const combined = settings.view === "both";
-  const label = (name) => combined ? t(name) : programmeLabel(name, language);
+  const categoryLabel = (name) => programmeLabel(name, language, data.entities);
+  const label = (name) => combined ? t(name) : categoryLabel(name);
   const countLabel = {women: "women", both: "first-year students", "all-programmes": "first-year students", men: "men"}[settings.view];
   const rows = combined ? comparisonRows(data) : programmeRows(data, settings.view);
   const series = combined ? ["Women", "Men"] : data.focus ? data.programmes
     : data.programmes.filter((name) => rows.some((d) => d.programme === name && d.count > 0));
   const showShare = settings.share && (!data.focus || data.totals.some((d) => d.share != null));
-  const scope = data.focus ? `, ${programmeLabel(data.focus, language)}` : "";
+  const scope = data.focus ? `, ${categoryLabel(data.focus)}` : "";
   const width = settings.width;
   const fontSize = settings.fontSize;
   const font = FONTS[settings.font];
   const colors = combined ? {Women: settings.womenColor, Men: settings.menColor} : programmeColors(data, settings);
   const titleLines = lines(settings.title, Math.floor((width - 80) / 17));
-  const subtitle = `${data.start}–${data.end}${data.focus ? ` · ${programmeLabel(data.focus, language)}` : ""}`;
+  const subtitle = `${data.start}–${data.end}${data.focus ? ` · ${categoryLabel(data.focus)}` : ""}`;
   const subtitleLines = lines(subtitle, Math.floor((width - 64) / (fontSize * 0.6)));
   const headerHeight = 52 + titleLines.length * 30 + (subtitleLines.length - 1) * (fontSize + 3);
   const height = settings.height;
@@ -106,7 +107,7 @@ export function renderChart(data, settings, {onYear} = {}) {
     marks.push(Plot.lineY(data.totals, {
       x: "year", y: (d) => d.share == null ? NaN : shareScale(d.share),
       stroke: settings.lineColor, strokeWidth: settings.lineWidth,
-      title: (d) => `${d.year} · ${percent(d.share)} ${t("women")} (${t(data.focus ? "selected faculty / afdeling" : "recorded totals")})`
+      title: (d) => `${d.year} · ${percent(d.share)} ${t("women")} (${t(data.focus ? "Selected counts" : "Annual totals")})`
     }));
     if (data.start === data.end && data.totals[0]?.share != null) {
       marks.push(Plot.dot(data.totals, {x: "year", y: (d) => shareScale(d.share), fill: settings.lineColor, r: 4}));
@@ -131,7 +132,7 @@ export function renderChart(data, settings, {onYear} = {}) {
   svg.style.cssText = `display:block;background:${settings.background};font-family:${font};color:${settings.foreground}`;
   svg.append(svgNode("title", {}, `${settings.title}${scope}, ${data.start}–${data.end}`));
   const description = combined ? t("Recorded counts of female and male first-year students") : t("Counts of {unit}", {unit: t(countLabel)});
-  const descriptionScope = data.focus ? t(" in {programme}", {programme: programmeLabel(data.focus, language)}) : combined ? "" : t(" by programme");
+  const descriptionScope = data.focus ? t(" in {programme}", {programme: categoryLabel(data.focus)}) : combined ? "" : t(settings.groupByFaculty ? " by faculty" : " by source category");
   svg.append(svgNode("desc", {}, `${description}${descriptionScope}.${showShare ? ` ${t("The line uses an independent right axis and shows women as a share of female and male counts in this selection.")} ${t(settings.undefinedAsZero ? "Undefined percentages are shown as 0%." : "Undefined percentages leave gaps.")}` : ""}`));
   const background = svgNode("rect", {width, height: 1, fill: settings.background});
   svg.append(background);
@@ -142,7 +143,7 @@ export function renderChart(data, settings, {onYear} = {}) {
   plot.setAttribute("y", headerHeight);
   svg.append(plot);
   const axisLabel = {women: "Women", both: "First-year students", "all-programmes": "Students", men: "Men"}[settings.view];
-  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, t(`${axisLabel}${combined || data.focus ? "" : " by programme"}`)));
+  plot.append(svgNode("text", {x: margin.left, y: 19, "text-anchor": "start", fill: settings.foreground, "font-weight": 600}, t(`${axisLabel}${combined || data.focus ? "" : settings.groupByFaculty ? " by faculty" : " by category"}`)));
   if (showShare) {
     const axis = select(plot).append("g")
       .attr("data-axis", "share")
@@ -180,14 +181,14 @@ export function renderChart(data, settings, {onYear} = {}) {
     }
     if (showShare) {
       svg.append(svgNode("line", {x1: 32, x2: 47, y1: cursor - 4, y2: cursor - 4, stroke: settings.lineColor, "stroke-width": settings.lineWidth}));
-      svg.append(svgNode("text", {x: 55, y: cursor, "font-size": fontSize - 1}, t(data.focus ? "Share of women within this faculty / afdeling" : "Women as a share of all students (recorded totals)")));
+      svg.append(svgNode("text", {x: 55, y: cursor, "font-size": fontSize - 1}, t("Women as a share of the selected totals")));
       cursor += 24;
     }
   }
   cursor += 18;
   cursor += textBlock(svg, `${t("Source")}: ${graphSources(language)}`,
     32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);
-  const missingProgrammeNote = programmeDataNote(data, language);
+  const missingProgrammeNote = dataNotes(data, language);
   if (missingProgrammeNote) {
     cursor += textBlock(svg, missingProgrammeNote,
       32, cursor, {"font-size": Math.max(10, fontSize - 2), opacity: 0.65}, Math.floor((width - 64) / (fontSize * 0.5)), fontSize + 3);

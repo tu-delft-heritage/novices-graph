@@ -1,147 +1,96 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
-import {comparisonRows, normalizeData, programmeCount, programmeRows, programmeSum, selectRange} from "../src/components/data.js";
+import {comparisonRows, groupedData, normalizeMasters, programmeCount, programmeRows, programmeSum, selectRange} from "../src/components/data.js";
+import {fixture, loadMasters} from "./helpers/master-data.js";
 
-test("joins totals by year, preserves missing values and leaves zero-denominator shares undefined", () => {
-  const data = normalizeData(
-    {Totaal: {2002: 4, 2000: 0, 2001: 2}, Programme: {2000: 0, 2001: 1, 2002: 3}, nan: {2000: 99}},
-    {Totaal: {2001: 6, 2000: 0}},
-    {Programme: {0: "#123456"}}
-  );
-  assert.deepEqual(data.years, [2000, 2001, 2002]);
-  assert.deepEqual(data.programmes, ["Programme"]);
-  assert.deepEqual(data.totals.map((d) => d.share), [null, 0.25, null]);
-  assert.equal(data.totals[2].male, null);
-  assert.equal(data.totals[1].female, 2);
-  assert.equal(data.totals[1].programmeTotal, 1);
-  assert.equal(data.colors.Programme, "#123456");
-});
+const data = await loadMasters();
 
-test("range selection is inclusive and removes inactive programmes without changing totals", () => {
-  const data = normalizeData(
-    {Totaal: {2000: 3, 2001: 5}, Old: {2000: 3, 2001: 0}, New: {2000: 0, 2001: 4}},
-    {Totaal: {2000: 7, 2001: 5}}
-  );
-  const range = selectRange(data, 2001, 2001);
-  assert.deepEqual(range.programmes, ["New"]);
-  assert.equal(range.rows[0].count, 4);
-  assert.equal(range.totals[0].female, 5);
-  assert.equal(selectRange(data, 2001, 2000).totals.length, 2);
-});
-
-test("the original 1905–2018 data retain their recorded totals and programme discrepancies", async () => {
-  const read = async (name) => JSON.parse(await readFile(new URL(`../data/${name}`, import.meta.url)));
-  const data = normalizeData(await read("female_at_tu.json"), await read("male_at_tu.json"), await read("colors.json"));
-  assert.equal(data.years.length, 114);
-  assert.equal(data.programmes.length, 28);
-  assert.deepEqual(data.totals[0], {year: 1905, female: 22, male: 247, share: 22 / 269, programmeTotal: 9});
-  assert.equal(data.totals.find((d) => d.year === 1944).share, null);
-  assert.equal(data.totals.at(-1).share, 1853 / (1853 + 4078));
-  assert.ok(data.totals.every((d) => Number.isFinite(d.male) && Number.isFinite(d.female)));
-});
-
-test("comparison stacks recorded female and male totals while preserving missing counts", () => {
-  const data = normalizeData(
-    {Totaal: {2000: 10, 2001: 0, 2002: 4}, Faculty: {2000: 2, 2001: 0, 2002: 4}},
-    {Totaal: {2000: 90, 2001: 0}, Faculty: {2000: 6, 2001: 3}}
-  );
-  const combined = comparisonRows(selectRange(data, 2000, 2002, "", {view: "both", undefinedAsZero: true}));
-  assert.deepEqual(combined, [
-    {year: 2000, sex: "Women", count: 10, lower: 0, upper: 10},
-    {year: 2000, sex: "Men", count: 90, lower: 10, upper: 100},
-    {year: 2001, sex: "Women", count: 0, lower: 0, upper: 0},
-    {year: 2001, sex: "Men", count: 0, lower: 0, upper: 0},
-    {year: 2002, sex: "Women", count: 4, lower: 0, upper: 4},
-    {year: 2002, sex: "Men", count: null, lower: 4, upper: null}
-  ]);
-  const focused = comparisonRows(selectRange(data, 2000, 2000, "Faculty"));
-  assert.equal(focused[0].count, 2);
-  assert.equal(focused[1].count, 6);
-  assert.equal(focused[1].upper, 8);
-  // A programme with only male students still belongs in the comparison breakdown.
-  assert.deepEqual(selectRange(data, 2001, 2001, "", {view: "both"}).programmes, ["Faculty"]);
-});
-
-test("faculty focus uses matching counts and preserves unknown and zero-denominator percentages", () => {
-  const data = normalizeData(
-    {Totaal: {2000: 10, 2001: 20}, Old: {2000: 2, 2001: 0}, New: {2000: 4, 2001: 5}},
-    {Totaal: {2000: 90, 2001: 80}, Old: {2000: 6, 2001: 0}}
-  );
-  const old = selectRange(data, 2000, 2001, "Old");
-  assert.deepEqual(old.programmes, ["Old"]);
-  assert.deepEqual(old.allProgrammes, ["Old", "New"]);
-  assert.ok(old.rows.every((d) => d.programme === "Old"));
-  assert.deepEqual(old.totals[0], {year: 2000, female: 2, male: 6, programmeTotal: 2, share: 0.25});
-  assert.equal(old.totals[1].share, null);
-  const newer = selectRange(data, 2000, 2001, "New");
-  assert.equal(newer.totals[1].female, 5);
-  assert.equal(newer.totals[1].male, null);
-  assert.equal(newer.totals[1].share, null);
-  assert.deepEqual(selectRange(data, 2001, 2001, "Old").programmes, ["Old"]);
-  assert.equal(selectRange(data, 2000, 2001).totals[0].share, 0.1);
-});
-
-test("undefined shares can use zero without changing counts or the underlying data", () => {
-  const data = normalizeData(
-    {Totaal: {2000: 0, 2001: 4, 2002: 2}, Faculty: {2000: 0, 2001: 4, 2002: 2}},
-    {Totaal: {2000: 0, 2002: 6}, Faculty: {2000: 0, 2002: 6}}
-  );
-  const original = structuredClone(data);
-  for (const programme of ["", "Faculty"]) {
-    const filled = selectRange(data, 2000, 2002, programme, {undefinedAsZero: true});
-    assert.deepEqual(filled.totals.map((d) => d.share), [0, 0, 0.25]);
-    assert.equal(filled.totals[0].female, 0);
-    assert.equal(filled.totals[1].female, 4);
-    assert.equal(filled.totals[1].male, null);
-    const gaps = selectRange(data, 2000, 2002, programme, {undefinedAsZero: false});
-    assert.deepEqual(gaps.totals.map((d) => d.share), [null, null, 0.25]);
+test("masters replace legacy totals and cover every year through 2026", () => {
+  assert.equal(data.years.length, 122);
+  assert.equal(data.years[0], 1905);
+  assert.equal(data.years.at(-1), 2026);
+  assert.equal(data.programmes.length, 31);
+  for (const [year, female, male] of [[1905,22,247], [2002,439,1647], [2015,1461,3885], [2018,1935,4282], [2026,2261,4638]]) {
+    const r = data.totals.find((r) => r.year === year);
+    assert.equal(r.female, female); assert.equal(r.male, male);
+    assert.equal(r.share, female/(female+male));
   }
-  assert.deepEqual(data, original);
+  assert.equal(data.totals.at(-1).level, "faculty_sum");
+  assert.equal(data.totals.at(-1).status, "current_snapshot_2026-11-01");
 });
 
-test("new programme views use the chosen counts, retain male-only programmes, and leave incomplete years blank", () => {
-  const data = normalizeData(
-    {Totaal: {2000: 10, 2001: 0, 2002: 4}, Shared: {2000: 2, 2001: 0, 2002: 4}},
-    {Totaal: {2000: 90, 2001: 0, 2002: 20}, Shared: {2000: 6, 2001: 0}, MaleOnly: {2000: 3, 2001: 0, 2002: 0}}
-  );
-  assert.deepEqual(data.programmes, ["Shared", "MaleOnly"]);
-  const men = selectRange(data, 2000, 2002, "", {view: "men", undefinedAsZero: true});
-  assert.deepEqual(men.programmeMissingYears, [2002]);
-  const rows = programmeRows(men, "men");
-  assert.deepEqual(rows.filter((d) => d.year === 2000).map((d) => [d.programme, d.count, d.lower, d.upper]), [
-    ["Shared", 6, 0, 6], ["MaleOnly", 3, 6, 9]
-  ]);
-  assert.equal(programmeSum(men, 2000, "men"), 9);
-  assert.equal(programmeSum(men, 2001, "men"), 0);
-  assert.equal(programmeSum(men, 2002, "men"), null);
-  assert.ok(rows.filter((d) => d.year === 2002).every((d) => d.count === null && d.upper === null));
-  assert.equal(men.totals.at(-1).male, 20);
-
-  const all = selectRange(data, 2000, 2002, "Shared", {view: "all-programmes"});
-  assert.deepEqual(programmeRows(all, "all-programmes").map((d) => d.count), [8, 0, null]);
-  assert.equal(programmeSum(all, 2000, "all-programmes"), 8);
-  // A partial combined count must not silently substitute zero for either sex.
-  assert.equal(programmeCount({count: 4, male: null}, "all-programmes"), null);
-  assert.equal(programmeCount({count: null, male: 3}, "all-programmes"), null);
-  const allCategories = selectRange(data, 2000, 2000, "", {view: "all-programmes"});
-  assert.deepEqual(allCategories.programmeMissingYears, [2000]);
-  assert.ok(programmeRows(allCategories, "all-programmes").every((d) => d.count === null));
-});
-
-test("real programme breakdowns use sums rather than totals and report the 2002–2018 gap", async () => {
-  const read = async (name) => JSON.parse(await readFile(new URL(`../data/${name}`, import.meta.url)));
-  const data = normalizeData(await read("female_at_tu.json"), await read("male_at_tu.json"));
-  for (const [view, firstSum, lastCompleteSum] of [["men", 221, 1939], ["all-programmes", 230, 2474]]) {
-    const range = selectRange(data, 1905, 2018, "", {view, undefinedAsZero: true});
-    assert.deepEqual(range.programmeMissingYears, Array.from({length: 17}, (_, i) => 2002 + i));
-    assert.equal(programmeSum(range, 1905, view), firstSum);
-    assert.equal(programmeSum(range, 1944, view), 0);
-    assert.equal(programmeSum(range, 2001, view), lastCompleteSum);
-    assert.equal(programmeSum(range, 2018, view), null);
-    assert.ok(programmeRows(range, view).filter((d) => d.year >= 2002).every((d) => d.upper === null));
-    assert.equal(range.totals.at(-1).male, 4078);
-    assert.equal(range.totals.at(-1).share, 1853 / 5931);
-    assert.deepEqual(selectRange(data, 1905, 2001, "", {view}).programmeMissingYears, []);
+test("both grouping modes conserve all known annual counts without including master total rows", () => {
+  for (const groupByFaculty of [false,true]) {
+    for (const view of ["women","men","all-programmes"]) {
+      const selected = selectRange(data,1905,2026,"",{groupByFaculty,view});
+      assert.deepEqual(selected.programmeMissingYears,[1944]);
+      for (const total of selected.totals) {
+        const expected = total.year === 1944 ? null : view === "women" ? total.female : view === "men" ? total.male : total.female+total.male;
+        assert.equal(programmeSum(selected,total.year,view),expected,`${groupByFaculty}/${view}/${total.year}`);
+      }
+      assert.ok(programmeRows(selected,view).filter((r) => r.year === 2026).some((r) => r.upper > 0));
+    }
   }
+});
+
+test("faculty mapping merges programmes, joins later faculty aliases and retains historical exceptions", () => {
+  const grouped = groupedData(data,true);
+  assert.equal(grouped.programmes.length,11);
+  assert.equal(grouped.programmes.filter((id) => id === "faculty:CEG").length,1);
+  assert.ok(grouped.programmes.includes("historical:alle-lessen"));
+  assert.ok(grouped.programmes.includes("historical:enkele-lessen"));
+  assert.ok(grouped.programmes.includes("historical:ijker"));
+  const focus = selectRange(data,1905,2026,"faculty:CEG",{groupByFaculty:true});
+  assert.deepEqual(focus.totals.filter((r) => r.year === 1905).map((r) => [r.female,r.male]),[[1,76]]);
+  assert.deepEqual(focus.totals.filter((r) => r.year === 2026).map((r) => [r.female,r.male]),[[238,466]]);
+  const row = grouped.rows.find((r) => r.year === 1999 && r.programme === "faculty:AS");
+  assert.ok(row.members.includes("historical:life-science-technology"));
+  assert.equal(grouped.rows.filter((r) => r.year === 1999 && r.members.includes("historical:life-science-technology")).length,1);
+  assert.deepEqual(selectRange(data,2002,2002,"faculty:ABE").totals.map((r) => [r.female,r.male]),[[153,307]]);
+});
+
+test("1944 blanks are preserved separately from the recorded zero total and zero-share display", () => {
+  const before = structuredClone(data);
+  for (const groupByFaculty of [false,true]) {
+    const all = selectRange(data,1944,1944,"",{groupByFaculty,undefinedAsZero:true});
+    assert.equal(all.totals[0].female,0);
+    assert.equal(all.totals[0].share,0);
+    assert.equal(all.totals[0].programmeTotal,null);
+    assert.ok(all.selectedRows.every((r) => r.count === null && r.male === null));
+    const focus = selectRange(data,1944,1944,groupByFaculty?"faculty:ABE":"historical:bouwkundig-ingenieur",{groupByFaculty,undefinedAsZero:true});
+    assert.equal(focus.totals[0].female,null);
+    assert.equal(focus.totals[0].share,0);
+    assert.equal(selectRange(data,1944,1944,"",{groupByFaculty}).totals[0].share,null);
+  }
+  assert.deepEqual(data,before);
+});
+
+test("partial counts stay unknown during grouping, comparisons and range selection", () => {
+  const {data} = fixture();
+  const grouped = selectRange(data,2002,2000,"faculty:CEG",{groupByFaculty:true,view:"all-programmes",undefinedAsZero:true});
+  assert.deepEqual(grouped.totals.map((r) => [r.female,r.male,r.share]),[[5,15,0.25],[0,0,0],[6,null,0]]);
+  assert.deepEqual(grouped.programmeMissingYears,[2002]);
+  assert.deepEqual(programmeRows(grouped,"all-programmes").map((r) => r.count),[20,0,null]);
+  assert.equal(comparisonRows(grouped).at(-1).upper,null);
+  assert.equal(programmeCount({count:null,male:3},"all-programmes"),null);
+  assert.equal(selectRange(data,2002,2002,"A",{undefinedAsZero:false}).totals[0].share,null);
+  assert.throws(() => selectRange(data,2000,2002,"unknown"),/Unknown category/);
+});
+
+test("area series include missing-year sentinels rather than connecting across absent observations", () => {
+  const selected = selectRange(data,2000,2003,"",{view:"women"});
+  const rows = programmeRows(selected);
+  assert.equal(rows.find((r) => r.year === 2002 && r.programme === "historical:bouwkundig-ingenieur").upper,null);
+  assert.equal(rows.find((r) => r.year === 2001 && r.programme === "faculty:ABE").upper,null);
+  assert.equal(rows.length,selected.years.length*selected.programmes.length);
+});
+
+test("invalid masters and ambiguous mappings fail instead of silently altering sums", () => {
+  const {rows,mapping} = fixture();
+  assert.throws(() => normalizeMasters([...rows,rows[0]],mapping),/duplicate master key/);
+  assert.throws(() => normalizeMasters([{...rows[0],female:-1}],mapping),/Invalid count/);
+  assert.throws(() => normalizeMasters([{...rows[0],total:500}],mapping),/Inconsistent total/);
+  assert.throws(() => normalizeMasters(rows,[]),/Missing entity mapping/);
+  assert.throws(() => normalizeMasters(rows,[...mapping,{entity_id:"A",optional_faculty_group:"AS"}]),/Conflicting faculty mapping/);
+  assert.throws(() => normalizeMasters(rows,mapping.map((r) => ({...r,optional_faculty_group:"AS | CEG"}))),/Ambiguous/);
 });

@@ -1,13 +1,15 @@
 import {translate} from "./i18n.js";
 
-export const GRAPH_TITLE = "First-year students at the Delft Institute of Technology and TU Delft in the period 1905-2018";
+export const GRAPH_TITLE = "First-year students at the Delft Institute of Technology and TU Delft in the period 1905-2026";
 
-export function graphTitle(view, start, end, language = "en") {
+export function graphTitle(view, start, end, language = "en", groupByFaculty = false) {
   if (language === "nl") {
-    const subject = {women: "Vrouwelijke eerstejaarsstudenten", both: "Eerstejaarsstudenten", "all-programmes": "Eerstejaarsstudenten per opleiding", men: "Mannelijke eerstejaarsstudenten"}[view];
+    let subject = {women: "Vrouwelijke eerstejaarsstudenten", both: "Eerstejaarsstudenten", "all-programmes": "Eerstejaarsstudenten per opleiding", men: "Mannelijke eerstejaarsstudenten"}[view];
+    if (groupByFaculty && view !== "both") subject = subject.replace(" per opleiding", "") + " per faculteit";
     return `${subject} aan de Technische Hogeschool Delft en de TU Delft ${start === end ? `in ${start}` : `in de periode ${start}-${end}`}`;
   }
-  const subject = {women: "Female first-year students", both: "First-year students", "all-programmes": "First-year students by programme", men: "Male first-year students"}[view];
+  let subject = {women: "Female first-year students", both: "First-year students", "all-programmes": "First-year students by programme", men: "Male first-year students"}[view];
+  if (groupByFaculty && view !== "both") subject = subject.replace(" by programme", "") + " by faculty";
   return `${subject} at the Delft Institute of Technology and TU Delft ${start === end ? `in ${start}` : `in the period ${start}-${end}`}`;
 }
 
@@ -24,13 +26,23 @@ export function programmeDataNote(data, language = "en") {
   }
   if (!ranges.length) return "";
   const years = ranges.map(([start, end]) => start === end ? String(start) : `${start}–${end}`).join(", ");
-  return translate(language, "Programme data are incomplete for {years}; these years are left blank.", {years});
+  return translate(language, "Category counts are unavailable for {years}; these years are left blank.", {years});
 }
 
-export const GRAPH_SOURCES = "Delft Institute of Technology Yearbooks and reports, TU Delft Statistical Yearbooks and OSIRIS";
+export function dataNotes(data, language = "en") {
+  const notes = [];
+  if (data.grouping === "faculty") notes.push("Faculty grouping follows the mapping, not historical faculty ownership. Unmapped historical categories remain separate.");
+  else if (data.end >= 2002) notes.push("Original programmes through 2001; faculty counts from 2002.");
+  if (data.end >= 2012) notes.push("From 2012, totals sum faculty influx; they are not deduplicated university headcounts.");
+  if (data.end >= 2026) notes.push("2026: snapshot at 1 November, not a final annual count.");
+  const missing = data.view !== "both" || data.focus ? programmeDataNote(data, language) : "";
+  return [...notes.map((note) => translate(language, note)), missing].filter(Boolean).join(" ");
+}
+
+export const GRAPH_SOURCES = "Delft Institute of Technology Yearbooks and reports, TU Delft Statistical Yearbooks and OSIRIS; TU Delft faculty influx report (10 November 2026)";
 
 export function graphSources(language = "en") {
-  return language === "nl" ? "Jaarboeken en verslagen van de Technische Hogeschool Delft, Statistische Jaarboeken van de TU Delft en OSIRIS" : GRAPH_SOURCES;
+  return language === "nl" ? "Jaarboeken en verslagen van de Technische Hogeschool Delft, Statistische Jaarboeken van de TU Delft en OSIRIS; TU Delft faculteitsinstroomrapport (10 november 2026)" : GRAPH_SOURCES;
 }
 
 export const GRAPH_DESCRIPTION = [
@@ -39,7 +51,9 @@ export const GRAPH_DESCRIPTION = [
   "Over the course of time, the definition of first-year students changed. Up until 1982, no statistical distinction was made between different types of first-year students. From 1982, the numbers given for first-year students include 'internal switchers' (students who changed to a different study) because these figures were best in line with earlier data. The introduction of the bachelor’s-master’s system in 2002 also had an impact on the calculation method which probably explains the ‘dip' the graph shows in that year."
 ];
 
-export function graphDescription(view, language = "en") {
+export function graphDescription(view, language = "en", groupByFaculty = false) {
+  const groupText = (text) => text.replaceAll("by programme", groupByFaculty ? "by faculty" : "by source category")
+    .replaceAll("per opleiding", groupByFaculty ? "per faculteit" : "per broncategorie");
   if (language === "nl") {
     const introduction = {
       women: "Deze grafiek toont het aantal vrouwelijke eerstejaarsstudenten per opleiding en het percentage vrouwen onder alle eerstejaarsstudenten.",
@@ -48,7 +62,7 @@ export function graphDescription(view, language = "en") {
       men: "Deze grafiek toont het aantal mannelijke eerstejaarsstudenten per opleiding. De lijn toont het percentage vrouwen onder alle eerstejaarsstudenten. Jaren met onvolledige opleidingsgegevens blijven leeg."
     };
     return [
-      `${introduction[view]} Pas vanaf 1905 konden vrouwen in Delft een voltijdse technische studie volgen.`,
+      `${groupText(introduction[view])} Pas vanaf 1905 konden vrouwen in Delft een voltijdse technische studie volgen.`,
       "Opvallend is dat het percentage vrouwen vóór de Tweede Wereldoorlog hoger was dan in de periode daarna. Pas in 1983 stijgt het percentage tot boven de 11% – het hoogste vooroorlogse percentage.",
       "In de loop van de tijd veranderde de definitie van eerstejaarsstudenten. Tot 1982 werd in de statistieken geen onderscheid gemaakt tussen verschillende soorten eerstejaarsstudenten. Vanaf 1982 zijn ‘interne omzwaaiers’ (studenten die overstapten naar een andere studie) meegeteld, omdat deze cijfers het beste aansloten bij eerdere gegevens. Ook de invoering van het bachelor-masterstelsel in 2002 had invloed op de berekeningswijze. Dit verklaart waarschijnlijk de ‘dip’ die de grafiek in dat jaar laat zien."
     ];
@@ -59,7 +73,7 @@ export function graphDescription(view, language = "en") {
     men: "This graph shows the number of male first-year students by programme. The line shows the percentage of women among all first-year students. Years with incomplete programme data are left blank."
   };
   return view === "both" ? GRAPH_DESCRIPTION : [
-    `${introduction[view]} It was only possible for women to follow a full-time technical study at Delft from 1905.`,
+    `${groupText(introduction[view])} It was only possible for women to follow a full-time technical study at Delft from 1905.`,
     ...GRAPH_DESCRIPTION.slice(1)
   ];
 }

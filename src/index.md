@@ -1,5 +1,5 @@
 ---
-title: First-year students at the Delft Institute of Technology and TU Delft in the period 1905-2018
+title: First-year students at the Delft Institute of Technology and TU Delft in the period 1905-2026
 ---
 
 ```js

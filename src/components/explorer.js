@@ -1,14 +1,14 @@
-import {programmeCount, programmeSum, selectRange} from "./data.js";
+import {groupedData, programmeCount, programmeSum, selectRange} from "./data.js";
 import {FONTS, programmeColors, renderChart} from "./chart.js";
 import {download, jpgBlob, jpgDimensions, svgBlob} from "./export.js";
 import {createDataExport, csvDataBlob, jsonDataBlob} from "./data-export.js";
-import {graphDescription, graphFilename, graphTitle, programmeDataNote} from "./caption.js";
+import {dataNotes, graphDescription, graphFilename, graphTitle} from "./caption.js";
 
 import {formatters, programmeLabel, translate} from "./i18n.js";
 
 export function defaultSettings(data, language = "en") {
   return {
-    start: data.years[0], end: data.years.at(-1), programme: "", view: "women", language, undefinedAsZero: true,
+    start: data.years[0], end: data.years.at(-1), programme: "", view: "women", language, groupByFaculty: false, undefinedAsZero: true,
     title: graphTitle("women", data.years[0], data.years.at(-1), language),
     chartType: "bars", palette: "original", width: 1200, height: 450,
     font: "sans", fontSize: 13, background: "#ffffff", foreground: "#263238",
@@ -29,6 +29,7 @@ function element(tag, className, text) {
 export function createExplorer(data, Inputs) {
   let settings = defaultSettings(data);
   const t = (message, values) => translate(settings.language, message, values);
+  const categoryLabel = (id) => programmeLabel(id, settings.language, groupedData(data, settings.groupByFaculty).entities);
   let selectedYear = settings.end;
   let svg;
   let frame;
@@ -45,7 +46,7 @@ export function createExplorer(data, Inputs) {
         <section class="year-inspector" aria-label="Values for a selected year"><div class="inspect-control"></div><div class="year-stats grid grid-cols-4"></div><details class="programme-details"><summary>Programme breakdown</summary><div class="programme-table"></div></details></section>
       </div>
     </div>
-    <details class="source-notes"><summary>Data notes</summary><p>Programme sums can differ from recorded totals, which are used for the percentage line. Missing counts or a zero denominator (as in 1944) make the percentage undefined. These percentages use 0% by default; turn off “Undefined percentages as 0” to leave gaps. Programme classifications change in 2002.</p><a href="https://github.com/tu-delft-heritage/novices-graph">Data repository</a></details>`;
+    <details class="source-notes"><summary>Data notes</summary><p>Grouping sums recorded counts. Missing counts remain missing; the zero option affects only percentages. Counting definitions change over time. The recent PDF/SVG supersedes the older 2012–2018 workbook.</p><a href="https://github.com/tu-delft-heritage/novices-graph">Data repository</a></details>`;
   const fields = {};
   const controlDefinitions = new Map();
   const sections = root.querySelector(".control-sections");
@@ -58,10 +59,17 @@ export function createExplorer(data, Inputs) {
     return group;
   }
   function createControl(key, label, type, options) {
+    if (key === "programme") {
+      const categories = groupedData(data, settings.groupByFaculty);
+      label = settings.groupByFaculty ? "Faculty / category" : "Faculty / afdeling";
+      options = {...options, choices: [["", settings.groupByFaculty ? "All faculties / categories" : "All faculties / afdelingen"],
+        ...categories.programmes.map((id) => [id, id])]};
+    }
+    if (key === "view" && settings.groupByFaculty) options = {...options, choices: options.choices.map(([id, name]) => [id, name.replace("by programme", "by faculty")])};
     const config = {...options, label: t(label), value: settings[key]};
     let input;
     if (type === "select") {
-      input = Inputs.select(new Map(options.choices.map(([value, name]) => [key === "programme" && value ? programmeLabel(value, settings.language) : t(name), value])), config);
+      input = Inputs.select(new Map(options.choices.map(([value, name]) => [key === "programme" && value ? categoryLabel(value) : t(name), value])), config);
     } else if (type === "checkbox") {
       input = Inputs.toggle(config);
     } else if (type === "range" || type === "number") {
@@ -89,12 +97,13 @@ export function createExplorer(data, Inputs) {
   ]});
   control(dataControls, "start", "From", "select", {choices: years});
   control(dataControls, "end", "To", "select", {choices: years});
+  control(dataControls, "groupByFaculty", "Group programmes by faculty", "checkbox");
   control(dataControls, "programme", "Faculty / afdeling", "select", {
     choices: [["", "All faculties / afdelingen"], ...data.programmes.map((name) => [name, name.trim()])]
   });
   control(dataControls, "undefinedAsZero", "Undefined percentages as 0", "checkbox");
   const appearance = section("Appearance");
-  control(appearance, "title", "Chart title", "text", {maxlength: 120, required: true});
+  control(appearance, "title", "Chart title", "text", {maxlength: 180, required: true});
   control(appearance, "chartType", "Chart type", "select", {choices: [["bars", "Stacked bars"], ["area", "Stacked area"]]});
   control(appearance, "palette", "Colour palette", "select", {choices: [["original", "Original programme colours"], ["tableau", "Tableau categorical"], ["blue", "Tonal blues"]]});
   control(appearance, "womenColor", "Women colour", "color");
@@ -124,13 +133,15 @@ export function createExplorer(data, Inputs) {
   const dataDownloadActions = element("div", "download-actions");
   dataDownloadActions.innerHTML = '<button type="button" data-export="csv">Download CSV</button><button type="button" data-export="json">Download JSON</button>';
   dataExport.append(dataDownloadActions);
+  const dataExportNote = element("small", "muted");
+  dataExport.append(dataExportNote);
   const buttons = [...sections.querySelectorAll("[data-export]")];
   const jpgButton = downloadActions.querySelector('[data-export="jpg"]');
   const fine = section("Fine adjustments", sections, true);
   control(fine, "lineWidth", "Line width", "range", {min: 1, max: 6, step: 0.5});
   control(fine, "barGap", "Bar spacing", "range", {min: 0, max: 0.7, step: 0.05});
   control(fine, "opacity", "Fill opacity", "range", {min: 0.2, max: 1, step: 0.05});
-  const customSection = section("Programme colours", sections, true);
+  const customSection = section("Category colours", sections, true);
   customSection.append(element("p", "control-help", "Changing the palette clears these overrides."));
   const customFields = element("div", "custom-colours");
   customSection.append(customFields);
@@ -164,14 +175,14 @@ export function createExplorer(data, Inputs) {
     const stats = root.querySelector(".year-stats");
     stats.replaceChildren();
     const values = [
-      ["Women · recorded total", record.female == null ? t("Not recorded") : number(record.female)],
-      ["Men · recorded total", record.male == null ? t("Not recorded") : number(record.male)],
+      [record.level === "faculty_sum" ? "Women · faculty sum" : "Women · recorded total", record.female == null ? t("Not recorded") : number(record.female)],
+      [record.level === "faculty_sum" ? "Men · faculty sum" : "Men · recorded total", record.male == null ? t("Not recorded") : number(record.male)],
       ["Share of women", percent(record.share)],
-      ["Women · programme sum", record.programmeTotal == null ? t("Not recorded") : number(record.programmeTotal)]
+      ["Women · category sum", record.programmeTotal == null ? t("Not recorded") : number(record.programmeTotal)]
     ];
     if (allProgrammes || menOnly) {
       const sum = programmeSum(visibleData, year, settings.view);
-      values[3] = [`${menOnly ? "Men" : "Students"} · programme sum`, sum == null ? t("Not recorded") : number(sum)];
+      values[3] = [`${menOnly ? "Men" : "Students"} · category sum`, sum == null ? t("Not recorded") : number(sum)];
     }
     if (visibleData.focus) {
       values[0][0] = "Women";
@@ -191,7 +202,7 @@ export function createExplorer(data, Inputs) {
     if (combined || allProgrammes) columns.push(["Men", (d) => d.male]);
     if (allProgrammes) columns.push(["All students", (d) => programmeCount(d, "all-programmes")]);
     const header = element("tr");
-    for (const label of ["Programme", ...columns.map(([label]) => label)]) {
+    for (const label of [settings.groupByFaculty ? "Faculty / historical category" : "Category", ...columns.map(([label]) => label)]) {
       const th = element("th", "", t(label));
       th.scope = "col";
       header.append(th);
@@ -201,11 +212,11 @@ export function createExplorer(data, Inputs) {
     table.append(head);
     const body = document.createElement("tbody");
     const rows = visibleData.rows.filter((d) => d.year === year && (
-      settings.view === "women" ? d.count !== 0 : visibleData.focus || d.count > 0 || d.male > 0
+      visibleData.focus || d.count > 0 || d.male > 0
     )).sort((a, b) => (programmeCount(b, settings.view) ?? -1) - (programmeCount(a, settings.view) ?? -1));
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      tr.append(element("td", "", programmeLabel(row.programme, settings.language)));
+      tr.append(element("td", "", categoryLabel(row.programme)));
       for (const [, value] of columns) tr.append(element("td", "", value(row) == null ? t("Not recorded") : number(value(row))));
       body.append(tr);
     });
@@ -214,12 +225,13 @@ export function createExplorer(data, Inputs) {
   }
 
   function syncColours() {
-    const colors = programmeColors(data, settings);
-    customFields.replaceChildren(...data.programmes.map((name) => {
+    const categories = groupedData(data, settings.groupByFaculty);
+    const colors = programmeColors(categories, settings);
+    customFields.replaceChildren(...categories.programmes.map((name) => {
       // Native colour inputs need hex; D3 interpolators may return rgb().
       const canvas = document.createElement("canvas").getContext("2d");
       canvas.fillStyle = colors[name];
-      const input = Inputs.color({label: programmeLabel(name, settings.language), value: canvas.fillStyle});
+      const input = Inputs.color({label: categoryLabel(name), value: canvas.fillStyle});
       input.dataset.programme = name;
       return input;
     }));
@@ -234,9 +246,12 @@ export function createExplorer(data, Inputs) {
       customSection.hidden = combined;
       fields.womenColor.hidden = !combined;
       fields.menColor.hidden = !combined;
-      root.querySelector(".chart-description").replaceChildren(...graphDescription(settings.view, settings.language).map((paragraph) => element("p", "", paragraph)));
-      root.querySelector(".selection-note").textContent = programmeDataNote(range, settings.language) || (range.focus && range.totals.every((d) => d.male == null)
-        ? t(settings.undefinedAsZero ? "Male counts are unavailable for this faculty / afdeling; undefined percentages are shown as 0%." : "Male counts are unavailable for this faculty / afdeling; no percentage is shown.") : "");
+      root.querySelector(".chart-description").replaceChildren(...graphDescription(settings.view, settings.language, settings.groupByFaculty).map((paragraph) => element("p", "", paragraph)));
+      root.querySelector(".selection-note").textContent = dataNotes(range, settings.language);
+      root.querySelector(".programme-details > summary").textContent = t(settings.groupByFaculty ? "Faculty breakdown" : "Category breakdown");
+      customSection.querySelector("summary").textContent = t(settings.groupByFaculty ? "Faculty colours" : "Category colours");
+      dataExportNote.hidden = !settings.groupByFaculty;
+      dataExportNote.textContent = t("Grouped CSV includes totals, categories and original source rows. Filter by record_type before summing.");
       svg = renderChart(range, settings, {onYear: (year) => {if (selectedYear !== year) updateInspector(year);}});
       chartMount.replaceChildren(svg);
       document.title = settings.title;
@@ -272,19 +287,23 @@ export function createExplorer(data, Inputs) {
     if (input.dataset.programme) settings.customColors[input.dataset.programme] = input.value;
     else {
       const key = input.dataset.setting;
-      const automaticTitle = settings.title === graphTitle(settings.view, settings.start, settings.end, settings.language);
+      const automaticTitle = settings.title === graphTitle(settings.view, settings.start, settings.end, settings.language, settings.groupByFaculty);
       settings[key] = input.value;
+      if (key === "groupByFaculty" && settings.groupByFaculty && settings.programme) {
+        const faculty = data.entities[settings.programme]?.faculty;
+        if (faculty) settings.programme = `faculty:${faculty}`;
+      }
       if (key === "start" && settings.start > settings.end) settings.end = settings.start;
       if (key === "end" && settings.end < settings.start) settings.start = settings.end;
       fields.start.value = settings.start;
       fields.end.value = settings.end;
       if (key !== "title" && automaticTitle) {
-        settings.title = graphTitle(settings.view, settings.start, settings.end, settings.language);
+        settings.title = graphTitle(settings.view, settings.start, settings.end, settings.language, settings.groupByFaculty);
         fields.title.value = settings.title;
       }
-      if (key === "language") {
+      if (key === "language" || key === "groupByFaculty") {
         translateInterface();
-        fields.language.querySelector("select").focus();
+        fields[key].querySelector("select, input").focus();
       }
       if (key === "palette") {settings.customColors = {}; syncColours();}
     }
@@ -295,11 +314,7 @@ export function createExplorer(data, Inputs) {
   root.querySelector("[data-reset]").addEventListener("click", () => {
     settings = defaultSettings(data, settings.language);
     selectedYear = settings.end;
-    Object.entries(fields).forEach(([key, input]) => {
-      input.value = settings[key];
-      input.querySelector("input[type=color]")?.dispatchEvent(new Event("input"));
-    });
-    syncColours();
+    translateInterface();
     render();
     status.textContent = t("Settings reset.");
   });
@@ -327,7 +342,7 @@ export function createExplorer(data, Inputs) {
       if (disposed) return;
       const faculty = snapshot.programme ? `-${snapshot.programme.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")}` : "";
       const name = graphFilename(snapshot.view);
-      download(blob, `${name}${faculty}-${snapshot.start}-${snapshot.end}${!isDataExport && snapshot.language === "nl" ? "-nl" : ""}.${format}`);
+      download(blob, `${name}${snapshot.groupByFaculty ? "-grouped-by-faculty" : ""}${faculty}-${snapshot.start}-${snapshot.end}${!isDataExport && snapshot.language === "nl" ? "-nl" : ""}.${format}`);
       status.textContent = t("{format} downloaded.", {format: format.toUpperCase()});
     } catch (error) {
       status.textContent = t("Export failed: {error}", {error: t(error.message)});

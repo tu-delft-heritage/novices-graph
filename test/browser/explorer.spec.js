@@ -2,446 +2,201 @@ import {test, expect} from "@playwright/test";
 import {readFile} from "node:fs/promises";
 import {csvParse} from "d3";
 
-test("production site loads under the repository subpath and keeps original totals", async ({page}) => {
-  const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  const failed = [];
-  page.on("response", (response) => {if (response.status() >= 400) failed.push(response.url());});
+const chart = (page) => page.locator("svg[data-chart]");
+const stats = (page) => page.locator(".stat strong");
+async function download(page, format) {
+  const pending = page.waitForEvent("download");
+  await page.getByRole("button",{name:`Download ${format}`,exact:true}).click();
+  const file = await pending;
+  return {name:file.suggestedFilename(), bytes:await readFile(await file.path())};
+}
+
+test("production masters load under the repository subpath through 2026", async ({page}) => {
+  const errors=[],failed=[];
+  page.on("pageerror",e=>errors.push(e.message));
+  page.on("response",r=>{if(r.status()>=400)failed.push(r.url());});
   await page.goto("./");
-  await expect(page.locator("svg[data-chart]")).toBeVisible();
+  await expect(chart(page)).toBeVisible();
+  await expect(page.getByLabel("To",{exact:true}).locator("option:checked")).toHaveText("2026");
+  await expect(page.getByLabel("To",{exact:true}).locator("option")).toHaveCount(122);
+  await expect(stats(page)).toHaveText(["2,261","4,638","32.8%","2,261"]);
+  await expect(page.locator(".selection-note")).toContainText("snapshot at 1 November");
+  await expect(page.locator(".selection-note")).toContainText("faculty counts from 2002");
   await expect(page.locator("[data-axis='share']")).toBeVisible();
-  await expect(page.locator(".year-stats")).toContainText("1,853");
-  await expect(page.locator(".year-stats")).toContainText("31.2%");
-  await page.getByLabel("Inspect year").selectOption({label: "1905"});
-  await expect(page.locator(".stat").first()).toContainText("22");
-  await expect(page.locator(".stat").last()).toContainText("9");
-  await page.getByLabel("Inspect year").selectOption({label: "1944"});
-  await expect(page.getByLabel("Undefined percentages as 0")).toBeChecked();
-  await expect(page.locator(".year-stats")).toContainText("0.0%");
-  expect(errors).toEqual([]);
-  expect(failed).toEqual([]);
-  await page.screenshot({path: "test-results/desktop-preview.png", fullPage: true});
+  await page.getByLabel("Inspect year",{exact:true}).selectOption("1905");
+  await expect(stats(page)).toHaveText(["22","247","8.2%","22"]);
+  await page.getByLabel("Inspect year",{exact:true}).selectOption("2002");
+  await expect(stats(page)).toHaveText(["439","1,647","21.0%","439"]);
+  expect(errors).toEqual([]); expect(failed).toEqual([]);
+  await page.screenshot({path:"test-results/masters-default.png",fullPage:true});
 });
 
-test("range and styling controls update the chart, including a single zero-count year", async ({page}) => {
+test("grouping removes duplicate faculty labels, retains exceptions and preserves totals", async ({page}) => {
   await page.goto("./");
-  await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
-  await expect(page.locator("svg[data-chart]")).toHaveAttribute("aria-label", /2002 to 2018/);
-  await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked area"});
-  await expect(page.locator("g[aria-label='area']")).toBeVisible();
-  await page.getByLabel("Percentage line & right axis").uncheck();
-  await expect(page.locator("[data-axis='share']")).toHaveCount(0);
-  await page.getByLabel("To", {exact: true}).selectOption({label: "1944"});
-  await expect(page.getByLabel("From", {exact: true}).locator("option:checked")).toHaveText("1944");
-  await expect(page.locator("svg[data-chart]")).toBeVisible();
-  await expect(page.locator(".year-stats")).toContainText("0.0%");
-  await page.getByLabel("Percentage line & right axis").check();
-  await expect(page.locator("g[aria-label='dot'] circle")).toHaveCount(1);
-  await page.getByLabel("Undefined percentages as 0").uncheck();
-  await expect(page.locator(".year-stats")).toContainText("Not defined");
-  await expect(page.locator("g[aria-label='dot'] circle")).toHaveCount(0);
-  await page.getByRole("button", {name: "Reset", exact: true}).click();
-  await expect(page.getByLabel("Undefined percentages as 0")).toBeChecked();
-  await expect(page.getByLabel("From", {exact: true}).locator("option:checked")).toHaveText("1905");
-  await expect(page.locator("[data-axis='share']")).toBeVisible();
-});
+  await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+  const faculty=page.getByLabel("Faculty / category",{exact:true});
+  await expect(faculty.locator("option")).toHaveCount(12);
+  await expect(faculty.locator("option").filter({hasText:/^Civil Engineering and Geosciences$/})).toHaveCount(1);
+  await expect(faculty.locator("option").filter({hasText:/^All classes \(historical category\)$/})).toHaveCount(1);
+  await expect(stats(page)).toHaveText(["2,261","4,638","32.8%","2,261"]);
+  await expect(page.getByLabel("Chart title",{exact:true})).toHaveValue(/by faculty.*1905-2026/);
+  await expect(chart(page)).toContainText("not historical faculty ownership");
+  await page.getByLabel("Inspect year",{exact:true}).selectOption("1905");
+  await expect(stats(page)).toHaveText(["22","247","8.2%","22"]);
+  await page.getByText("Faculty breakdown",{exact:true}).click();
+  await expect(page.locator(".breakdown-table")).toContainText("All classes (historical category)");
+  await page.screenshot({path:"test-results/grouped-faculties.png",fullPage:true});
 
-test("exports a standalone SVG and a decodable JPG with the selected styling and dimensions", async ({page}) => {
-  await page.goto("./");
-  await page.getByLabel("Chart title", {exact: true}).fill("Delft & women <1905–2018>");
-  await page.getByLabel("Background", {exact: true}).fill("#f5f0e8");
-  await page.getByLabel("JPG resolution").selectOption({label: "1×"});
-  const chart = page.locator("svg[data-chart]");
-  await expect(chart).toHaveAttribute("aria-label", /Delft & women/);
-  const width = Number(await chart.getAttribute("width"));
-  const height = Number(await chart.getAttribute("height"));
-  const svgDownload = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download SVG"}).click();
-  const svgFile = await svgDownload;
-  expect(svgFile.suggestedFilename()).toBe("women-at-tu-delft-1905-2018.svg");
-  const xml = await readFile(await svgFile.path(), "utf8");
-  expect(xml).toContain("Delft &amp; women &lt;1905–2018&gt;");
-  expect(xml).toContain("Source: Delft Institute of Technology Yearbooks and reports, TU Delft Statistical Yearbooks and OSIRIS");
-  expect(xml).toContain("Architecture and the Built Environment");
-  expect(xml).not.toContain("NaN");
-  const svgResult = await page.evaluate(async (source) => {
-    const doc = new DOMParser().parseFromString(source, "image/svg+xml");
-    const image = new Image();
-    image.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(source)))}`;
-    await image.decode();
-    return {errors: doc.querySelectorAll("parsererror").length, width: image.naturalWidth, height: image.naturalHeight};
-  }, xml);
-  expect(svgResult).toEqual({errors: 0, width, height});
-  const jpgDownload = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download JPG"}).click();
-  const jpgFile = await jpgDownload;
-  const bytes = await readFile(await jpgFile.path());
-  expect(bytes.subarray(0, 2).toString("hex")).toBe("ffd8");
-  const result = await page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/jpeg;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
-    const context = canvas.getContext("2d");
-    context.drawImage(image, 0, 0);
-    return {width: image.naturalWidth, height: image.naturalHeight, corner: [...context.getImageData(2, 2, 1, 1).data]};
-  }, bytes.toString("base64"));
-  expect(result.width).toBe(width);
-  expect(result.height).toBe(height);
-  expect(result.corner[0]).toBeGreaterThan(240);
-  expect(result.corner[2]).toBeLessThan(240);
-  await expect(page.locator(".status")).toContainText("JPG downloaded");
-});
-
-test("mobile layout keeps controls usable without overflowing the page", async ({page}) => {
-  await page.setViewportSize({width: 390, height: 844});
-  await page.goto("./");
-  await expect(page.locator("svg[data-chart]")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.getByLabel("Legend", {exact: true}).uncheck();
-  await expect(page.getByLabel("Legend", {exact: true})).not.toBeChecked();
-  await page.screenshot({path: "test-results/mobile-preview.png", fullPage: true});
-});
-
-test("faculty focus applies to counts, percentages and exports, and reset restores all faculties", async ({page}) => {
-  await page.goto("./");
-  const dataSection = page.locator(".control-group").filter({has: page.getByRole("heading", {name: "Data", exact: true})});
-  const exportSection = page.locator(".control-group").filter({has: page.getByRole("heading", {name: "Image export", exact: true})});
-  await expect(dataSection.getByLabel("From", {exact: true})).toBeVisible();
-  await expect(exportSection.getByRole("button", {name: "Download SVG"})).toBeVisible();
-  const faculty = dataSection.getByLabel("Faculty / afdeling", {exact: true});
-  await faculty.selectOption({label: "Architecture and the Built Environment"});
-  await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
-  await expect(page.locator("svg[data-chart]")).toHaveAttribute("aria-label", /Architecture and the Built Environment, 2002 to 2018/);
-  await expect(page.locator(".year-stats .stat")).toHaveCount(3);
-  await expect(page.locator(".stat").first()).toContainText("393");
-  await expect(page.locator(".stat").nth(1)).toContainText("Not recorded");
-  await expect(page.locator(".stat").last()).toContainText("0.0%");
-  await expect(page.locator("[data-axis='share']")).toBeVisible();
-  await expect(page.locator(".selection-note")).toContainText("undefined percentages are shown as 0%");
-  await page.getByText("Programme breakdown", {exact: true}).click();
+  await faculty.selectOption({label:"Civil Engineering and Geosciences"});
+  await expect(stats(page)).toHaveText(["1","76","1.3%"]);
+  await page.getByLabel("Inspect year",{exact:true}).selectOption("2026");
+  await expect(stats(page)).toHaveText(["238","466","33.8%"]);
   await expect(page.locator(".breakdown-table tbody tr")).toHaveCount(1);
-
-  const pending = page.waitForEvent("download");
-  await exportSection.getByRole("button", {name: "Download SVG"}).click();
-  const file = await pending;
-  expect(file.suggestedFilename()).toBe("women-at-tu-delft-architecture-and-the-built-environment-2002-2018.svg");
-  const xml = await readFile(await file.path(), "utf8");
-  expect(xml).toContain("Architecture and the Built Environment");
-  expect(xml).not.toContain("Civil Engineering and Geosciences");
-  expect(xml).toContain('data-axis="share"');
-  expect(xml).toContain("undefined percentages shown as 0%");
-
-  await page.getByLabel("Undefined percentages as 0").uncheck();
-  await expect(page.locator(".stat").last()).toContainText("Not defined");
-  await expect(page.locator("[data-axis='share']")).toHaveCount(0);
-  await expect(page.locator(".selection-note")).toContainText("no percentage is shown");
-
-  await faculty.selectOption({label: "Architectural Engineering (Bk)"});
-  await page.getByLabel("From", {exact: true}).selectOption({label: "1905"});
-  await page.getByLabel("To", {exact: true}).selectOption({label: "2001"});
-  await expect(page.locator(".stat").first()).toContainText("180");
-  await expect(page.locator(".stat").nth(1)).toContainText("337");
-  await expect(page.locator(".stat").last()).toContainText("34.8%");
-  await expect(page.locator("[data-axis='share']")).toBeVisible();
-  await page.getByRole("button", {name: "Reset", exact: true}).click();
-  await expect(faculty.locator("option:checked")).toHaveText("All faculties / afdelingen");
-  await expect(page.locator(".year-stats .stat")).toHaveCount(4);
-  await expect(page.locator(".stat").first()).toContainText("1,853");
+  const json=JSON.parse((await download(page,"JSON")).bytes);
+  expect(json.selection).toEqual({from:1905,to:2026,entity_id:"faculty:CEG",grouping:"faculty"});
+  expect(json.programmes[0]).toMatchObject({year:1905,male:76,female:1});
+  expect(json.source_records.some(r=>r.entity_id==="historical:mijnbouwkundig-ingenieur")).toBe(true);
+  expect(json.programmes.at(-1)).toMatchObject({year:2026,male:466,female:238});
+  await page.getByRole("button",{name:"Reset",exact:true}).click();
+  await expect(page.getByLabel("Group programmes by faculty",{exact:true})).not.toBeChecked();
+  await expect(page.getByLabel("Faculty / afdeling",{exact:true}).locator("option")).toHaveCount(32);
+  await expect(stats(page)).toHaveText(["2,261","4,638","32.8%","2,261"]);
 });
 
-test("CSV and JSON downloads follow the selected years and faculty and do not depend on image settings", async ({page}) => {
+test("grouping a focused historical programme selects its mapped faculty", async ({page}) => {
   await page.goto("./");
-  await page.getByLabel("To", {exact: true}).selectOption({label: "1905"});
-  // Data is still downloadable while a required image-title field is empty.
-  await page.getByLabel("Chart title", {exact: true}).fill("");
-  const csvPending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download CSV", exact: true}).click();
-  const csvFile = await csvPending;
-  expect(csvFile.suggestedFilename()).toBe("women-at-tu-delft-1905-1905.csv");
-  const rows = csvParse(await readFile(await csvFile.path(), "utf8"));
-  expect(rows).toHaveLength(29);
-  expect(rows.every((row) => row.year === "1905")).toBe(true);
-  const total = rows.find((row) => row.record_type === "selection_total");
-  expect(total.female).toBe("22");
-  expect(total.programme_female_total).toBe("9");
-  expect(rows.find((row) => row.programme === "Civiel-Landmeter").female).toBe("0");
-  await expect(page.getByRole("button", {name: "Download JSON", exact: true})).toBeEnabled();
-
-  await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architecture and the Built Environment"});
-  await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
-  const jsonPending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download JSON", exact: true}).click();
-  const jsonFile = await jsonPending;
-  expect(jsonFile.suggestedFilename()).toBe("women-at-tu-delft-architecture-and-the-built-environment-2002-2002.json");
-  const json = JSON.parse(await readFile(await jsonFile.path(), "utf8"));
-  expect(json.selection).toEqual({from: 2002, to: 2002, faculty: "Architecture and the Built Environment"});
-  expect(json.undefined_shares_as_zero).toBe(true);
-  expect(json.totals).toEqual([{year: 2002, female: 153, male: null, female_share: 0, programme_female_total: 153}]);
-  expect(json.programmes).toEqual([{year: 2002, programme: "Architecture and the Built Environment", female: 153, male: null, female_share: 0}]);
-  await expect(page.locator(".status")).toHaveText("JSON downloaded.");
-  await expect(page.getByRole("button", {name: "Download CSV", exact: true})).toBeEnabled();
-
-  await page.getByLabel("Undefined percentages as 0").uncheck();
-  const gapsPending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download CSV", exact: true}).click();
-  const gapsFile = await gapsPending;
-  const gaps = csvParse(await readFile(await gapsFile.path(), "utf8"));
-  expect(gaps).toHaveLength(2);
-  expect(gaps.every((row) => row.female === "153" && row.male === "" && row.female_share === "")).toBe(true);
+  await page.getByLabel("Faculty / afdeling",{exact:true}).selectOption({label:"Civil Engineering (CT)"});
+  await page.getByLabel("To",{exact:true}).selectOption("1905");
+  await expect(stats(page)).toHaveText(["1","62","1.6%"]);
+  await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+  await expect(page.getByLabel("Faculty / category",{exact:true}).locator("option:checked")).toHaveText("Civil Engineering and Geosciences");
+  await expect(stats(page)).toHaveText(["1","76","1.3%"]);
+  await page.getByLabel("Chart title",{exact:true}).fill("My historical comparison");
+  await page.getByLabel("Group programmes by faculty",{exact:true}).uncheck();
+  await expect(page.getByLabel("Chart title",{exact:true})).toHaveValue("My historical comparison");
+  // The original faculty series starts in 2002; the grouping option does not
+  // backfill the original category when it is turned off.
+  await expect(stats(page)).toHaveText(["Not recorded","Not recorded","0.0%"]);
 });
 
-test("the alternative view stacks recorded totals and follows view, range, colours, and exports", async ({page}) => {
-  await page.goto("./");
-  const view = page.getByLabel("View", {exact: true});
-  const chart = page.locator("svg[data-chart]");
-  await expect(chart).toHaveAttribute("aria-label", /^Female first-year students/);
-  await expect(page.locator(".chart-description")).toContainText("female first-year students by programme");
-  await view.selectOption({label: "Women and men"});
-  await expect(chart).toHaveAttribute("aria-label", /^First-year students/);
-  await expect(page.locator(".chart-description")).toContainText("the distribution of men and women");
-  await expect(page.locator(".stat").last()).toContainText("5,931");
-  await expect(page.getByLabel("Women colour", {exact: true})).toBeVisible();
-  await expect(page.getByLabel("Colour palette", {exact: true})).toBeHidden();
-  await page.screenshot({path: "test-results/comparison-preview.png", fullPage: true});
-
-  await page.getByLabel("To", {exact: true}).selectOption({label: "1905"});
-  await expect(page.getByLabel("Chart title", {exact: true})).toHaveValue(/in 1905$/);
-  await expect(page.locator(".stat").last()).toContainText("269");
-  const women = chart.locator("rect").filter({has: page.locator("title", {hasText: "1905 · Women\n22 first-year students"})});
-  const men = chart.locator("rect").filter({has: page.locator("title", {hasText: "1905 · Men\n247 first-year students"})});
-  await expect(women).toHaveCount(1);
-  await expect(men).toHaveCount(1);
-  const womenHeight = Number(await women.getAttribute("height"));
-  const menHeight = Number(await men.getAttribute("height"));
-  expect(menHeight / womenHeight).toBeCloseTo(247 / 22, 5);
-  expect(Number(await men.getAttribute("y")) + menHeight).toBeCloseTo(Number(await women.getAttribute("y")), 5);
-
-  await page.getByLabel("Women colour", {exact: true}).fill("#8b2f87");
-  await expect(women).toHaveAttribute("fill", "#8b2f87");
-  const pending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download SVG", exact: true}).click();
-  const file = await pending;
-  expect(file.suggestedFilename()).toBe("first-year-students-at-tu-delft-1905-1905.svg");
-  const xml = await readFile(await file.path(), "utf8");
-  expect(xml).toContain("247 first-year students");
-  expect(xml).toContain("22 first-year students");
-  expect(xml).toContain("#8b2f87");
-  expect(xml).toContain("First-year students at the Delft Institute of Technology and TU Delft in 1905");
-
-  await page.getByLabel("To", {exact: true}).selectOption({label: "2018"});
-  await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked area"});
-  await expect(chart.locator("g[aria-label='area']")).toBeVisible();
-  await expect(chart.locator("g[aria-label='area'] path[fill='#4c78a8']").first()).toBeVisible();
-  await page.getByLabel("Chart title", {exact: true}).fill("My comparison");
-  await view.selectOption({label: "Women by programme"});
-  await expect(page.getByLabel("Chart title", {exact: true})).toHaveValue("My comparison");
-  await page.getByRole("button", {name: "Reset", exact: true}).click();
-  await expect(view.locator("option:checked")).toHaveText("Women by programme");
-  await expect(chart).toHaveAttribute("aria-label", /^Female first-year students/);
-});
-
-test("the comparison uses faculty counts and does not invent missing male values", async ({page}) => {
-  await page.goto("./");
-  await page.getByLabel("View", {exact: true}).selectOption({label: "Women and men"});
-  await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architectural Engineering (Bk)"});
-  await page.getByLabel("To", {exact: true}).selectOption({label: "1905"});
-  await expect(page.locator(".stat").first().locator("strong")).toHaveText("1");
-  await expect(page.locator(".stat").nth(1).locator("strong")).toHaveText("3");
-  await expect(page.locator(".stat").last().locator("strong")).toHaveText("4");
-  await expect(page.locator(".stat").nth(2)).toContainText("25.0%");
-
-  await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architecture and the Built Environment"});
-  await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
-  await expect(page.locator(".stat").first().locator("strong")).toHaveText("153");
-  await expect(page.locator(".stat").nth(1)).toContainText("Not recorded");
-  await expect(page.locator(".stat").last()).toContainText("Not recorded");
-  await expect(page.locator(".selection-note")).toContainText("Male counts are unavailable");
-  await expect(page.locator("svg[data-chart] g[aria-label='rect'] rect[fill='#4c78a8']")).toHaveCount(0);
-  await page.getByLabel("Undefined percentages as 0").uncheck();
-  await expect(page.locator(".stat").nth(2)).toContainText("Not defined");
-  await expect(page.locator(".stat").nth(1)).toContainText("Not recorded");
-
-  const pending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download JSON", exact: true}).click();
-  const file = await pending;
-  const json = JSON.parse(await readFile(await file.path(), "utf8"));
-  expect(json.totals[0]).toMatchObject({year: 2002, female: 153, male: null, female_share: null});
-  await page.setViewportSize({width: 390, height: 844});
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-});
-
-for (const scenario of [
-  {view: "All students by programme", title: /^First-year students by programme/, count: 4, unit: "first-year students", sum: "230", prefix: "students-by-programme-at-tu-delft"},
-  {view: "Men by programme", title: /^Male first-year students/, count: 3, unit: "men", sum: "221", prefix: "men-at-tu-delft"}
+for(const [view,title,lastSum] of [
+  ["Women by programme",/^Female first-year students/,"2,261"],
+  ["Women and men",/^First-year students/,"6,899"],
+  ["All students by programme",/^First-year students by programme/,"6,899"],
+  ["Men by programme",/^Male first-year students/,"4,638"]
 ]) {
-  test(`${scenario.view} supports counts, styling, areas, and exports without filling missing years`, async ({page}) => {
+  test(`${view} renders and exports recent counts in both grouping modes`,async ({page})=>{
     await page.goto("./");
-    await page.getByLabel("View", {exact: true}).selectOption({label: scenario.view});
-    const chart = page.locator("svg[data-chart]");
-    await expect(chart).toHaveAttribute("aria-label", scenario.title);
-    await expect(page.getByLabel("Colour palette", {exact: true})).toBeVisible();
-    await expect(page.getByLabel("Women colour", {exact: true})).toBeHidden();
-    await expect(page.locator(".selection-note")).toContainText("2002–2018");
-    await expect(page.locator(".stat").nth(1)).toContainText("4,078");
-    await expect(page.locator(".stat").last()).toContainText("Not recorded");
-    const plotTitles = await chart.locator("g[aria-label='rect'] rect title").allTextContents();
-    expect(plotTitles.some((text) => /^2001 ·/.test(text))).toBe(true);
-    expect(plotTitles.some((text) => /^(200[2-9]|201\d) ·/.test(text))).toBe(false);
-    await page.screenshot({path: `test-results/${scenario.prefix}-preview.png`, fullPage: true});
-
-    await page.getByLabel("Inspect year", {exact: true}).selectOption({label: "1905"});
-    await expect(page.locator(".stat").last().locator("strong")).toHaveText(scenario.sum);
-    const bar = chart.locator("rect").filter({has: page.locator("title", {hasText: `1905 · Architectural Engineering (Bk)\n${scenario.count} ${scenario.unit}`})});
-    await expect(bar).toHaveCount(1);
-    await page.getByText("Programme colours", {exact: true}).click();
-    await page.getByLabel("Architectural Engineering (Bk)", {exact: true}).fill("#117744");
-    await expect(bar).toHaveAttribute("fill", "#117744");
-
-    const pending = page.waitForEvent("download");
-    await page.getByRole("button", {name: "Download SVG", exact: true}).click();
-    const file = await pending;
-    expect(file.suggestedFilename()).toBe(`${scenario.prefix}-1905-2018.svg`);
-    const xml = await readFile(await file.path(), "utf8");
-    expect(xml).toContain("Programme data are incomplete for 2002–2018");
-    expect(xml).toContain(`${scenario.count} ${scenario.unit}`);
-    expect(xml).toContain("#117744");
-    expect(xml).not.toContain("NaN");
-
-    await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked area"});
-    await expect(chart.locator("g[aria-label='area']")).toBeVisible();
-    // The programme area stops at 2001; the percentage line may continue to 2018.
-    const lastX = await chart.locator("g[aria-label='area'] path[d]").evaluateAll((paths) => Math.max(...paths.map((path) => {const box = path.getBBox(); return box.x + box.width;})));
-    expect(lastX).toBeGreaterThan(900);
-    expect(lastX).toBeLessThan(970);
-    await page.getByLabel("To", {exact: true}).selectOption({label: "2001"});
-    await expect(page.locator(".selection-note")).toBeEmpty();
-    await expect(page.getByLabel("Chart title", {exact: true})).toHaveValue(/1905-2001$/);
-    await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architectural Engineering (Bk)"});
-    await page.getByLabel("To", {exact: true}).selectOption({label: "1905"});
-    await page.getByText("Programme breakdown", {exact: true}).click();
-    await expect(page.locator(".breakdown-table tbody tr")).toHaveCount(1);
-    await expect(page.locator(".breakdown-table tbody td").last()).toHaveText(String(scenario.count));
-
-    await page.getByLabel("Faculty / afdeling", {exact: true}).selectOption({label: "Architecture and the Built Environment"});
-    await page.getByLabel("From", {exact: true}).selectOption({label: "2002"});
-    await page.getByLabel("Chart type", {exact: true}).selectOption({label: "Stacked bars"});
-    await expect(chart.locator("g[aria-label='rect'] rect title")).toHaveCount(0);
-    await expect(page.locator(".selection-note")).toContainText("incomplete for 2002");
-    await expect(page.locator(".breakdown-table tbody td").last()).toHaveText("Not recorded");
-    await page.getByLabel("Undefined percentages as 0").uncheck();
-    await expect(page.locator(".stat").nth(2)).toContainText("Not defined");
-    await expect(chart.locator("g[aria-label='rect'] rect title")).toHaveCount(0);
-
-    const jsonPending = page.waitForEvent("download");
-    await page.getByRole("button", {name: "Download JSON", exact: true}).click();
-    const jsonFile = await jsonPending;
-    const json = JSON.parse(await readFile(await jsonFile.path(), "utf8"));
-    expect(json.programmes[0]).toMatchObject({year: 2002, female: 153, male: null, female_share: null});
-    await page.setViewportSize({width: 390, height: 844});
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByLabel("View",{exact:true}).selectOption({label:view});
+    await expect(chart(page)).toHaveAttribute("aria-label",title);
+    await expect(stats(page).last()).toHaveText(lastSum);
+    const titles=await chart(page).locator("g[aria-label='rect'] rect title").allTextContents();
+    expect(titles.some(t=>t.startsWith("2026 ·"))).toBe(true);
+    await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+    await expect(stats(page).last()).toHaveText(lastSum);
+    await page.getByLabel("Chart type",{exact:true}).selectOption({label:"Stacked area"});
+    await expect(chart(page).locator("g[aria-label='area'] path[d]").first()).toBeVisible();
+    const xml=(await download(page,"SVG")).bytes.toString();
+    expect(xml).toContain("2026"); expect(xml).toContain("snapshot at 1 November"); expect(xml).not.toContain("NaN");
+    expect(xml).toContain("not historical faculty ownership");
+    await page.getByLabel("To",{exact:true}).selectOption("1905");
+    await page.getByLabel("View",{exact:true}).selectOption({label:"Women and men"});
+    await expect(stats(page).last()).toHaveText("269");
   });
 }
 
-for (const [view, dutchView, title] of [
-  ["Women by programme", "Vrouwen per opleiding", "Vrouwelijke eerstejaarsstudenten"],
-  ["Women and men", "Vrouwen en mannen", "Eerstejaarsstudenten"],
-  ["All students by programme", "Alle studenten per opleiding", "Eerstejaarsstudenten per opleiding"],
-  ["Men by programme", "Mannen per opleiding", "Mannelijke eerstejaarsstudenten"]
-]) {
-  test(`${view} switches languages without changing counts or styles and exports Dutch SVGs`, async ({page}) => {
-    const errors = [];
-    page.on("pageerror", (error) => errors.push(error.message));
+test("zero-share option changes only percentages, including 1944 and unavailable selections",async ({page})=>{
+  await page.goto("./");
+  await page.getByLabel("From",{exact:true}).selectOption("1944");
+  await page.getByLabel("To",{exact:true}).selectOption("1944");
+  await expect(stats(page)).toHaveText(["0","0","0.0%","Not recorded"]);
+  await expect(chart(page).locator("g[aria-label='dot'] circle")).toHaveCount(1);
+  await page.getByLabel("Undefined percentages as 0",{exact:true}).uncheck();
+  await expect(stats(page).nth(2)).toHaveText("Not defined");
+  await expect(chart(page).locator("g[aria-label='dot'] circle")).toHaveCount(0);
+  await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+  await page.getByLabel("Faculty / category",{exact:true}).selectOption({label:"Architecture and the Built Environment"});
+  await expect(stats(page)).toHaveText(["Not recorded","Not recorded","Not defined"]);
+  const json=JSON.parse((await download(page,"JSON")).bytes);
+  expect(json.programmes[0]).toMatchObject({female:null,male:null,female_share:null});
+  await page.getByLabel("Undefined percentages as 0",{exact:true}).check();
+  await expect(stats(page)).toHaveText(["Not recorded","Not recorded","0.0%"]);
+});
+
+test("CSV and JSON follow range, grouping and source counts independently of language",async ({page})=>{
+  await page.goto("./");
+  await page.getByLabel("From",{exact:true}).selectOption("2026");
+  await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+  await page.getByLabel("Faculty / category",{exact:true}).selectOption({label:"Architecture and the Built Environment"});
+  const dataSection=page.locator(".control-group").filter({has:page.getByRole("heading",{name:"Data export",exact:true})});
+  await expect(dataSection.getByRole("button",{name:"Download CSV",exact:true})).toBeVisible();
+  await expect(dataSection.getByRole("button",{name:"Download SVG",exact:true})).toHaveCount(0);
+  const csv=csvParse((await download(page,"CSV")).bytes.toString());
+  expect(csv).toHaveLength(3);
+  expect(csv.find(r=>r.record_type==="category")).toMatchObject({year:"2026",male:"335",female:"529",grouping:"faculty"});
+  expect(csv.find(r=>r.record_type==="source_record")).toMatchObject({source_label:"ABE",source_file:"2012-2026/Influx studenten.pdf"});
+  const english=JSON.parse((await download(page,"JSON")).bytes);
+  await page.getByLabel("Language / Taal",{exact:true}).selectOption({label:"Nederlands"});
+  expect(JSON.parse((await download(page,"JSON")).bytes)).toEqual(english);
+});
+
+for(const view of ["women","both","all-programmes","men"]) {
+  test(`${view} keeps grouped geometry and controls when switching Dutch and English`,async ({page})=>{
+    const errors=[];page.on("pageerror",e=>errors.push(e.message));
     await page.goto("./");
-    await page.getByLabel("View", {exact: true}).selectOption({label: view});
-    await page.getByLabel("Background", {exact: true}).fill("#f5f0e8");
-    const chart = page.locator("svg[data-chart]");
-    const geometry = () => chart.locator("g[aria-label='rect'] rect").evaluateAll((nodes) => nodes.map((node) => ["x", "y", "width", "height", "fill"].map((key) => node.getAttribute(key))));
-    const before = await geometry();
-    await page.getByLabel("Language / Taal", {exact: true}).selectOption({label: "Nederlands"});
-    await expect(chart).toHaveAttribute("lang", "nl");
-    await expect(page.locator("html")).toHaveAttribute("lang", "nl");
-    await expect(page.getByLabel("Weergave", {exact: true}).locator("option:checked")).toHaveText(dutchView);
-    await expect(chart).toHaveAttribute("aria-label", new RegExp(`^${title}`));
-    await expect(page).toHaveTitle(new RegExp(`^${title}`));
-    await expect(page.getByLabel("Achtergrond", {exact: true})).toHaveValue("#f5f0e8");
-    await expect(page.locator(".year-stats")).toContainText("1.853");
-    await expect(page.locator(".year-stats")).toContainText("31,2%");
-    await expect(page.locator(".chart-description")).toContainText("Pas vanaf 1905 konden vrouwen");
-    await expect(chart).toContainText("Eerste Wereldoorlog");
-    await expect(chart).toContainText("Percentage vrouwen");
-    await expect(chart).toContainText("Bron: Jaarboeken en verslagen");
+    await page.getByLabel("View",{exact:true}).selectOption({label:{women:"Women by programme",both:"Women and men","all-programmes":"All students by programme",men:"Men by programme"}[view]});
+    await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+    await page.getByLabel("Background",{exact:true}).fill("#f5f0e8");
+    const geometry=()=>chart(page).locator("g[aria-label='rect'] rect").evaluateAll(nodes=>nodes.map(n=>["x","y","width","height","fill"].map(k=>n.getAttribute(k))));
+    await expect(chart(page)).toContainText("not historical faculty ownership");
+    const before=await geometry();
+    await page.getByLabel("Language / Taal",{exact:true}).selectOption({label:"Nederlands"});
+    await expect(chart(page)).toHaveAttribute("lang","nl");
+    await expect(page.getByLabel("Opleidingen groeperen per faculteit",{exact:true})).toBeChecked();
+    await expect(page.locator(".year-stats")).toContainText("2.261");
+    await expect(page.locator(".year-stats")).toContainText("32,8%");
+    await expect(chart(page)).toContainText("peildatum 1 november");
     expect(await geometry()).toEqual(before);
-    await page.screenshot({path: `test-results/dutch-${view.toLowerCase().replaceAll(" ", "-")}.png`, fullPage: true});
-
-    const pending = page.waitForEvent("download");
-    await page.getByRole("button", {name: "Download SVG", exact: true}).click();
-    const file = await pending;
-    expect(file.suggestedFilename()).toMatch(/-1905-2018-nl\.svg$/);
-    const xml = await readFile(await file.path(), "utf8");
-    expect(xml).toContain('lang="nl"');
-    expect(xml).toContain("Eerste Wereldoorlog");
-    expect(xml).toContain("Bron: Jaarboeken en verslagen");
-    expect(xml).not.toContain("Share of women");
-    expect(xml).not.toContain("First World War");
-    expect(xml).not.toContain("NaN");
-    await expect(page.locator(".status")).toHaveText("SVG gedownload.");
-
-    await page.getByLabel("Faculteit / afdeling", {exact: true}).selectOption({label: "Bouwkundig ingenieur (Bk)"});
-    await page.getByLabel("Tot", {exact: true}).selectOption({label: "1905"});
-    await expect(chart).toHaveAttribute("aria-label", /Bouwkundig ingenieur \(Bk\), 1905 tot 1905/);
-    await expect(page.locator(".stat").nth(2)).toContainText("25,0%");
-    await page.getByLabel("Language / Taal", {exact: true}).selectOption({label: "English"});
-    await expect(chart).toHaveAttribute("lang", "en");
-    await expect(page.getByLabel("Faculty / afdeling", {exact: true}).locator("option:checked")).toHaveText("Architectural Engineering (Bk)");
-    await expect(page.getByLabel("View", {exact: true}).locator("option:checked")).toHaveText(view);
-    await expect(page.getByLabel("To", {exact: true}).locator("option:checked")).toHaveText("1905");
-    await expect(page.locator(".stat").nth(2)).toContainText("25.0%");
-    await page.getByLabel("Chart title", {exact: true}).fill("Mijn eigen titel / My own title");
-    await page.getByLabel("Language / Taal", {exact: true}).selectOption({label: "Nederlands"});
-    await expect(page.getByLabel("Grafiektitel", {exact: true})).toHaveValue("Mijn eigen titel / My own title");
-    await page.getByRole("button", {name: "Herstellen", exact: true}).click();
-    await expect(page.getByLabel("Language / Taal", {exact: true}).locator("option:checked")).toHaveText("Nederlands");
-    await expect(page.getByLabel("Grafiektitel", {exact: true})).toHaveValue(/^Vrouwelijke eerstejaarsstudenten/);
+    const svg=await download(page,"SVG");
+    expect(svg.name).toMatch(/grouped-by-faculty-1905-2026-nl\.svg$/);
+    expect(svg.bytes.toString()).toContain("Bron: Jaarboeken");
+    expect(svg.bytes.toString()).not.toContain("snapshot at 1 November");
+    await page.getByLabel("Faculteit / categorie",{exact:true}).selectOption({label:"Bouwkunde"});
+    await page.getByLabel("Tot",{exact:true}).selectOption("1905");
+    await expect(stats(page).nth(2)).toHaveText("25,0%");
+    await page.getByLabel("Language / Taal",{exact:true}).selectOption({label:"English"});
+    await expect(page.getByLabel("Faculty / category",{exact:true}).locator("option:checked")).toHaveText("Architecture and the Built Environment");
+    await expect(page.getByLabel("Background",{exact:true})).toHaveValue("#f5f0e8");
+    await expect(stats(page).nth(2)).toHaveText("25.0%");
+    await page.getByRole("button",{name:"Reset",exact:true}).click();
+    await expect(page.getByLabel("Group programmes by faculty",{exact:true})).not.toBeChecked();
     expect(errors).toEqual([]);
   });
 }
 
-test("Dutch mode preserves source data in downloads, missing values, JPG exports and mobile layout", async ({page}) => {
+test("SVG/JPG preserve styling, decode correctly, and the sidebar fits on mobile",async ({page})=>{
   await page.goto("./");
-  await page.getByLabel("Language / Taal", {exact: true}).selectOption({label: "Nederlands"});
-  await page.getByLabel("Weergave", {exact: true}).selectOption({label: "Alle studenten per opleiding"});
-  await page.getByLabel("Faculteit / afdeling", {exact: true}).selectOption({label: "Bouwkunde"});
-  await page.getByLabel("Van", {exact: true}).selectOption({label: "2002"});
-  await page.getByLabel("Ongedefinieerde percentages als 0", {exact: true}).uncheck();
-  await expect(page.locator(".stat").nth(1)).toContainText("Niet geregistreerd");
-  await expect(page.locator(".stat").nth(2)).toContainText("Ongedefinieerd");
-  await expect(page.locator(".selection-note")).toContainText("Opleidingsgegevens zijn onvolledig voor 2002–2018");
-  await page.getByText("Uitsplitsing per opleiding", {exact: true}).click();
-  await expect(page.locator(".breakdown-table")).toContainText("Bouwkunde");
-  for (const format of ["JSON", "CSV"]) {
-    const pending = page.waitForEvent("download");
-    await page.getByRole("button", {name: `Download ${format}`, exact: true}).click();
-    const file = await pending;
-    const content = await readFile(await file.path(), "utf8");
-    if (format === "JSON") {
-      const json = JSON.parse(content);
-      expect(json.selection.faculty).toBe("Architecture and the Built Environment");
-      expect(json.programmes[0]).toEqual({year: 2002, programme: "Architecture and the Built Environment", female: 153, male: null, female_share: null});
-    } else {
-      const records = csvParse(content);
-      expect(records[0]).toMatchObject({programme: "Architecture and the Built Environment", female: "153", male: "", female_share: ""});
-    }
-  }
-  await page.getByLabel("JPG-resolutie", {exact: true}).selectOption({label: "1×"});
-  const jpgPending = page.waitForEvent("download");
-  await page.getByRole("button", {name: "Download JPG", exact: true}).click();
-  const jpg = await jpgPending;
-  expect(jpg.suggestedFilename()).toMatch(/-nl\.jpg$/);
-  const bytes = await readFile(await jpg.path());
-  expect(bytes.subarray(0, 2).toString("hex")).toBe("ffd8");
-  await page.setViewportSize({width: 390, height: 844});
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({path: "test-results/dutch-mobile.png", fullPage: true});
+  await page.getByLabel("Group programmes by faculty",{exact:true}).check();
+  await page.getByLabel("Chart title",{exact:true}).fill("Delft & students <1905–2026>");
+  await page.getByLabel("Background",{exact:true}).fill("#f5f0e8");
+  await page.getByLabel("JPG resolution",{exact:true}).selectOption({label:"1×"});
+  await page.getByText("Faculty colours",{exact:true}).click();
+  await page.getByLabel("Architecture and the Built Environment",{exact:true}).fill("#117744");
+  await expect(chart(page).locator("g[aria-label='rect'] rect[fill='#117744']").first()).toBeVisible();
+  const xml=(await download(page,"SVG")).bytes.toString();
+  expect(xml).toContain("Delft &amp; students &lt;1905–2026&gt;"); expect(xml).toContain("#117744");
+  const parsed=await page.evaluate(xml=>new DOMParser().parseFromString(xml,"image/svg+xml").querySelectorAll("parsererror").length,xml);
+  expect(parsed).toBe(0);
+  const jpg=await download(page,"JPG");
+  expect(jpg.bytes.subarray(0,2).toString("hex")).toBe("ffd8");
+  const dimensions=await page.evaluate(async base64=>{const img=new Image();img.src=`data:image/jpeg;base64,${base64}`;await img.decode();return [img.naturalWidth,img.naturalHeight];},jpg.bytes.toString("base64"));
+  expect(dimensions).toEqual([Number(await chart(page).getAttribute("width")),Number(await chart(page).getAttribute("height"))]);
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.getByLabel("Language / Taal",{exact:true}).selectOption({label:"Nederlands"});
+  await expect(page.getByLabel("Grafiektitel",{exact:true})).toHaveValue("Delft & students <1905–2026>");
+  await page.screenshot({path:"test-results/grouped-dutch-mobile.png",fullPage:true});
+  await page.getByRole("button",{name:"Herstellen",exact:true}).click();
+  await expect(page.getByLabel("Language / Taal",{exact:true}).locator("option:checked")).toHaveText("Nederlands");
+  await expect(page.getByLabel("Opleidingen groeperen per faculteit",{exact:true})).not.toBeChecked();
 });

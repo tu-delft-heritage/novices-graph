@@ -1,6 +1,28 @@
+import {HISTORICAL_ALIASES} from "./entities.js";
+
 // Display translations only: source keys, counts, colours, and data exports stay stable.
 const dutch = {
   "Data": "Gegevens", "View": "Weergave", "From": "Van", "To": "Tot",
+  "Group programmes by faculty": "Opleidingen groeperen per faculteit",
+  "Women by faculty": "Vrouwen per faculteit", "Men by faculty": "Mannen per faculteit",
+  "All students by faculty": "Alle studenten per faculteit", "Students by faculty": "Studenten per faculteit",
+  "Women by category": "Vrouwen per categorie", "Men by category": "Mannen per categorie", "Students by category": "Studenten per categorie",
+  "Faculty / category": "Faculteit / categorie", "All faculties / categories": "Alle faculteiten / categorieën",
+  "Category": "Categorie", "Faculty / historical category": "Faculteit / historische categorie",
+  "Category breakdown": "Uitsplitsing per categorie", "Faculty breakdown": "Uitsplitsing per faculteit",
+  "Category colours": "Categoriekleuren", "Faculty colours": "Faculteitskleuren",
+  "Grouped CSV includes totals, categories and original source rows. Filter by record_type before summing.": "Gegroepeerde CSV bevat totalen, categorieën en oorspronkelijke bronregels. Filter op record_type voordat je aantallen optelt.",
+  "Women · faculty sum": "Vrouwen · som faculteiten", "Men · faculty sum": "Mannen · som faculteiten",
+  "Women · category sum": "Vrouwen · som categorieën", "Men · category sum": "Mannen · som categorieën", "Students · category sum": "Studenten · som categorieën",
+  "Original programmes through 2001; faculty counts from 2002.": "Oorspronkelijke opleidingen tot en met 2001; faculteitsaantallen vanaf 2002.",
+  "Faculty grouping follows the mapping, not historical faculty ownership. Unmapped historical categories remain separate.": "De groepering volgt de mapping, niet de historische faculteitsindeling. Historische categorieën zonder koppeling blijven apart.",
+  "From 2012, totals sum faculty influx; they are not deduplicated university headcounts.": "Vanaf 2012 zijn totalen de som van de faculteitsinstroom; personen zijn niet ontdubbeld over faculteiten.",
+  "2026: snapshot at 1 November, not a final annual count.": "2026: peildatum 1 november, geen definitief jaartotaal.",
+  "Category counts are unavailable for {years}; these years are left blank.": "Categorieaantallen ontbreken voor {years}; deze jaren blijven leeg.",
+  "Grouping sums recorded counts. Missing counts remain missing; the zero option affects only percentages. Counting definitions change over time. The recent PDF/SVG supersedes the older 2012–2018 workbook.": "De groepering telt geregistreerde aantallen op. Ontbrekende aantallen blijven ontbreken; de nuloptie geldt alleen voor percentages. Teldefinities veranderen in de tijd. De recente PDF/SVG vervangt de oudere werkmap voor 2012–2018.",
+  "Selected counts": "Geselecteerde aantallen", "Annual totals": "Jaartotalen",
+  "Women as a share of the selected totals": "Vrouwen als percentage van de geselecteerde totalen",
+  " by faculty": " per faculteit", " by source category": " per broncategorie",
   "Women by programme": "Vrouwen per opleiding", "Women and men": "Vrouwen en mannen",
   "All students by programme": "Alle studenten per opleiding", "Men by programme": "Mannen per opleiding",
   "Faculty / afdeling": "Faculteit / afdeling", "All faculties / afdelingen": "Alle faculteiten / afdelingen",
@@ -61,6 +83,9 @@ export function translate(language, message, values = {}) {
 
 // Keep the original identifiers (including spelling and whitespace) as map keys.
 const programmes = {
+  "Alle lessen": ["All classes (historical category)", "Alle lessen (historische categorie)"],
+  "Enkele lessen": ["Selected classes (historical category)", "Enkele lessen (historische categorie)"],
+  "IJker": ["IJker (historical category)", "IJker (historische categorie)"],
   "Bouwkunidg ingenieur (Bk)": ["Architectural Engineering (Bk)", "Bouwkundig ingenieur (Bk)"],
   "Civiel ingenieur (CT)": ["Civil Engineering (CT)", "Civiel ingenieur (CT)"],
   "Electrotechnisch ingenieur (Et)": ["Electrical Engineering (Et)", "Elektrotechnisch ingenieur (Et)"],
@@ -91,7 +116,9 @@ const programmes = {
   "Mechanical, Maritime and Materials Engineering": ["Mechanical, Maritime and Materials Engineering", "Werktuigbouwkunde, Maritieme Techniek en Materiaalwetenschappen"]
 };
 
-export function programmeLabel(name, language = "en") {
+export function programmeLabel(name, language = "en", entities = {}) {
+  name = entities[name]?.label ?? name;
+  name = HISTORICAL_ALIASES[name] ?? name;
   return programmes[name]?.[language === "nl" ? 1 : 0] ?? name.trim();
 }
 
