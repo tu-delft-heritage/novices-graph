@@ -1,0 +1,136 @@
+year,source_label,level,phase,male,female,total,female_share,row_type,faculty_code,academic_year,reported_total,status,definition,source_file,source_sheet,source_cells,entity_id
+2012,ABE,faculty,all,249,253,502,0.5039840637450199,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male ABE,faculty:ABE
+2012,AE,faculty,all,363,43,406,0.10591133004926108,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male AE,faculty:AE
+2012,AS,faculty,all,353,135,488,0.2766393442622951,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male AS,faculty:AS
+2012,CEG,faculty,all,461,143,604,0.2367549668874172,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male CEG,faculty:CEG
+2012,EEMCS,faculty,all,489,68,557,0.12208258527827648,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male EEMCS,faculty:EEMCS
+2012,IDE,faculty,all,216,156,372,0.41935483870967744,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male IDE,faculty:IDE
+2012,ME,faculty,all,608,80,688,0.11627906976744186,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male ME,faculty:ME
+2012,TPM,faculty,all,201,101,302,0.3344370860927152,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2012; Female/Male TPM,faculty:TPM
+2012,Sum of faculty influx,faculty_sum,all,2940,979,3919,0.2498086246491452,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2012; sum of eight faculty rows,faculty_sum:all
+2013,ABE,faculty,all,222,239,461,0.5184381778741866,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male ABE,faculty:ABE
+2013,AE,faculty,all,399,61,460,0.13260869565217392,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male AE,faculty:AE
+2013,AS,faculty,all,419,205,624,0.328525641025641,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male AS,faculty:AS
+2013,CEG,faculty,all,486,161,647,0.24884080370942813,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male CEG,faculty:CEG
+2013,EEMCS,faculty,all,538,96,634,0.15141955835962145,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male EEMCS,faculty:EEMCS
+2013,IDE,faculty,all,205,173,378,0.4576719576719577,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male IDE,faculty:IDE
+2013,ME,faculty,all,753,98,851,0.11515863689776733,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male ME,faculty:ME
+2013,TPM,faculty,all,197,113,310,0.36451612903225805,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2013; Female/Male TPM,faculty:TPM
+2013,Sum of faculty influx,faculty_sum,all,3219,1146,4365,0.2625429553264605,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2013; sum of eight faculty rows,faculty_sum:all
+2014,ABE,faculty,all,264,269,533,0.5046904315196998,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male ABE,faculty:ABE
+2014,AE,faculty,all,473,76,549,0.1384335154826958,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male AE,faculty:AE
+2014,AS,faculty,all,431,186,617,0.3014586709886548,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male AS,faculty:AS
+2014,CEG,faculty,all,565,203,768,0.2643229166666667,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male CEG,faculty:CEG
+2014,EEMCS,faculty,all,584,136,720,0.18888888888888888,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male EEMCS,faculty:EEMCS
+2014,IDE,faculty,all,199,173,372,0.4650537634408602,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male IDE,faculty:IDE
+2014,ME,faculty,all,746,166,912,0.18201754385964913,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male ME,faculty:ME
+2014,TPM,faculty,all,216,119,335,0.35522388059701493,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2014; Female/Male TPM,faculty:TPM
+2014,Sum of faculty influx,faculty_sum,all,3478,1328,4806,0.27632126508531,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2014; sum of eight faculty rows,faculty_sum:all
+2015,ABE,faculty,all,323,279,602,0.4634551495016611,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male ABE,faculty:ABE
+2015,AE,faculty,all,514,86,600,0.14333333333333334,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male AE,faculty:AE
+2015,AS,faculty,all,523,235,758,0.3100263852242744,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male AS,faculty:AS
+2015,CEG,faculty,all,515,175,690,0.2536231884057971,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male CEG,faculty:CEG
+2015,EEMCS,faculty,all,707,157,864,0.18171296296296297,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male EEMCS,faculty:EEMCS
+2015,IDE,faculty,all,198,187,385,0.4857142857142857,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male IDE,faculty:IDE
+2015,ME,faculty,all,878,208,1086,0.19152854511970535,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male ME,faculty:ME
+2015,TPM,faculty,all,227,134,361,0.37119113573407203,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2015; Female/Male TPM,faculty:TPM
+2015,Sum of faculty influx,faculty_sum,all,3885,1461,5346,0.2732884399551066,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2015; sum of eight faculty rows,faculty_sum:all
+2016,ABE,faculty,all,303,343,646,0.5309597523219814,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male ABE,faculty:ABE
+2016,AE,faculty,all,435,86,521,0.16506717850287908,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male AE,faculty:AE
+2016,AS,faculty,all,521,273,794,0.3438287153652393,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male AS,faculty:AS
+2016,CEG,faculty,all,498,179,677,0.26440177252584934,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male CEG,faculty:CEG
+2016,EEMCS,faculty,all,699,179,878,0.20387243735763097,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male EEMCS,faculty:EEMCS
+2016,IDE,faculty,all,175,199,374,0.5320855614973262,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male IDE,faculty:IDE
+2016,ME,faculty,all,804,209,1013,0.2063178677196446,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male ME,faculty:ME
+2016,TPM,faculty,all,260,132,392,0.336734693877551,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2016; Female/Male TPM,faculty:TPM
+2016,Sum of faculty influx,faculty_sum,all,3695,1600,5295,0.3021718602455146,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2016; sum of eight faculty rows,faculty_sum:all
+2017,ABE,faculty,all,386,401,787,0.5095298602287166,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male ABE,faculty:ABE
+2017,AE,faculty,all,498,58,556,0.10431654676258993,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male AE,faculty:AE
+2017,AS,faculty,all,532,240,772,0.31088082901554404,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male AS,faculty:AS
+2017,CEG,faculty,all,570,228,798,0.2857142857142857,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male CEG,faculty:CEG
+2017,EEMCS,faculty,all,846,169,1015,0.1665024630541872,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male EEMCS,faculty:EEMCS
+2017,IDE,faculty,all,210,257,467,0.550321199143469,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male IDE,faculty:IDE
+2017,ME,faculty,all,777,204,981,0.20795107033639143,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male ME,faculty:ME
+2017,TPM,faculty,all,269,139,408,0.34068627450980393,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2017; Female/Male TPM,faculty:TPM
+2017,Sum of faculty influx,faculty_sum,all,4088,1696,5784,0.29322268326417705,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2017; sum of eight faculty rows,faculty_sum:all
+2018,ABE,faculty,all,322,402,724,0.5552486187845304,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male ABE,faculty:ABE
+2018,AE,faculty,all,442,71,513,0.13840155945419103,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male AE,faculty:AE
+2018,AS,faculty,all,531,275,806,0.3411910669975186,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male AS,faculty:AS
+2018,CEG,faculty,all,542,210,752,0.27925531914893614,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male CEG,faculty:CEG
+2018,EEMCS,faculty,all,1141,307,1448,0.21201657458563536,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male EEMCS,faculty:EEMCS
+2018,IDE,faculty,all,210,265,475,0.5578947368421052,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male IDE,faculty:IDE
+2018,ME,faculty,all,779,246,1025,0.24,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male ME,faculty:ME
+2018,TPM,faculty,all,315,159,474,0.33544303797468356,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2018; Female/Male TPM,faculty:TPM
+2018,Sum of faculty influx,faculty_sum,all,4282,1935,6217,0.31124336496702587,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2018; sum of eight faculty rows,faculty_sum:all
+2019,ABE,faculty,all,319,387,706,0.5481586402266289,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male ABE,faculty:ABE
+2019,AE,faculty,all,502,71,573,0.12390924956369982,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male AE,faculty:AE
+2019,AS,faculty,all,504,268,772,0.3471502590673575,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male AS,faculty:AS
+2019,CEG,faculty,all,495,233,728,0.32005494505494503,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male CEG,faculty:CEG
+2019,EEMCS,faculty,all,830,227,1057,0.21475875118259224,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male EEMCS,faculty:EEMCS
+2019,IDE,faculty,all,192,276,468,0.5897435897435898,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male IDE,faculty:IDE
+2019,ME,faculty,all,777,213,990,0.21515151515151515,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male ME,faculty:ME
+2019,TPM,faculty,all,336,220,556,0.39568345323741005,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2019; Female/Male TPM,faculty:TPM
+2019,Sum of faculty influx,faculty_sum,all,3955,1895,5850,0.32393162393162395,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2019; sum of eight faculty rows,faculty_sum:all
+2020,ABE,faculty,all,310,430,740,0.581081081081081,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male ABE,faculty:ABE
+2020,AE,faculty,all,467,72,539,0.13358070500927643,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male AE,faculty:AE
+2020,AS,faculty,all,491,285,776,0.36726804123711343,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male AS,faculty:AS
+2020,CEG,faculty,all,424,222,646,0.34365325077399383,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male CEG,faculty:CEG
+2020,EEMCS,faculty,all,906,222,1128,0.19680851063829788,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male EEMCS,faculty:EEMCS
+2020,IDE,faculty,all,188,242,430,0.5627906976744186,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male IDE,faculty:IDE
+2020,ME,faculty,all,844,226,1070,0.21121495327102804,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male ME,faculty:ME
+2020,TPM,faculty,all,350,211,561,0.3761140819964349,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2020; Female/Male TPM,faculty:TPM
+2020,Sum of faculty influx,faculty_sum,all,3980,1910,5890,0.3242784380305603,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2020; sum of eight faculty rows,faculty_sum:all
+2021,ABE,faculty,all,282,485,767,0.6323337679269883,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male ABE,faculty:ABE
+2021,AE,faculty,all,460,98,558,0.17562724014336917,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male AE,faculty:AE
+2021,AS,faculty,all,548,276,824,0.33495145631067963,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male AS,faculty:AS
+2021,CEG,faculty,all,473,192,665,0.2887218045112782,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male CEG,faculty:CEG
+2021,EEMCS,faculty,all,959,220,1179,0.18659881255301103,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male EEMCS,faculty:EEMCS
+2021,IDE,faculty,all,193,264,457,0.5776805251641138,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male IDE,faculty:IDE
+2021,ME,faculty,all,909,243,1152,0.2109375,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male ME,faculty:ME
+2021,TPM,faculty,all,378,206,584,0.3527397260273973,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2021; Female/Male TPM,faculty:TPM
+2021,Sum of faculty influx,faculty_sum,all,4202,1984,6186,0.32072421597154865,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2021; sum of eight faculty rows,faculty_sum:all
+2022,ABE,faculty,all,290,442,732,0.6038251366120219,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male ABE,faculty:ABE
+2022,AE,faculty,all,468,102,570,0.17894736842105263,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male AE,faculty:AE
+2022,AS,faculty,all,435,276,711,0.3881856540084388,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male AS,faculty:AS
+2022,CEG,faculty,all,399,168,567,0.2962962962962963,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male CEG,faculty:CEG
+2022,EEMCS,faculty,all,887,218,1105,0.19728506787330316,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male EEMCS,faculty:EEMCS
+2022,IDE,faculty,all,190,231,421,0.5486935866983373,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male IDE,faculty:IDE
+2022,ME,faculty,all,878,259,1137,0.227792436235708,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male ME,faculty:ME
+2022,TPM,faculty,all,346,180,526,0.34220532319391633,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2022; Female/Male TPM,faculty:TPM
+2022,Sum of faculty influx,faculty_sum,all,3893,1876,5769,0.3251863407869648,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2022; sum of eight faculty rows,faculty_sum:all
+2023,ABE,faculty,all,309,429,738,0.5813008130081301,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male ABE,faculty:ABE
+2023,AE,faculty,all,458,95,553,0.1717902350813743,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male AE,faculty:AE
+2023,AS,faculty,all,396,252,648,0.3888888888888889,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male AS,faculty:AS
+2023,CEG,faculty,all,397,169,566,0.29858657243816256,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male CEG,faculty:CEG
+2023,EEMCS,faculty,all,920,196,1116,0.17562724014336917,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male EEMCS,faculty:EEMCS
+2023,IDE,faculty,all,154,239,393,0.6081424936386769,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male IDE,faculty:IDE
+2023,ME,faculty,all,874,249,1123,0.22172751558325912,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male ME,faculty:ME
+2023,TPM,faculty,all,289,163,452,0.3606194690265487,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2023; Female/Male TPM,faculty:TPM
+2023,Sum of faculty influx,faculty_sum,all,3797,1792,5589,0.3206298085525139,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2023; sum of eight faculty rows,faculty_sum:all
+2024,ABE,faculty,all,394,466,860,0.541860465116279,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male ABE,faculty:ABE
+2024,AE,faculty,all,483,118,601,0.19633943427620631,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male AE,faculty:AE
+2024,AS,faculty,all,416,227,643,0.35303265940902023,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male AS,faculty:AS
+2024,CEG,faculty,all,394,171,565,0.30265486725663715,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male CEG,faculty:CEG
+2024,EEMCS,faculty,all,957,234,1191,0.1964735516372796,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male EEMCS,faculty:EEMCS
+2024,IDE,faculty,all,191,255,446,0.5717488789237668,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male IDE,faculty:IDE
+2024,ME,faculty,all,971,287,1258,0.22813990461049286,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male ME,faculty:ME
+2024,TPM,faculty,all,307,131,438,0.2990867579908676,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2024; Female/Male TPM,faculty:TPM
+2024,Sum of faculty influx,faculty_sum,all,4113,1889,6002,0.31472842385871375,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2024; sum of eight faculty rows,faculty_sum:all
+2025,ABE,faculty,all,317,464,781,0.5941101152368758,detail,ABE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male ABE,faculty:ABE
+2025,AE,faculty,all,501,133,634,0.20977917981072555,detail,AE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male AE,faculty:AE
+2025,AS,faculty,all,454,257,711,0.36146272855133615,detail,AS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male AS,faculty:AS
+2025,CEG,faculty,all,436,198,634,0.31230283911671924,detail,CEG,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male CEG,faculty:CEG
+2025,EEMCS,faculty,all,1086,262,1348,0.1943620178041543,detail,EEMCS,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male EEMCS,faculty:EEMCS
+2025,IDE,faculty,all,200,269,469,0.5735607675906184,detail,IDE,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male IDE,faculty:IDE
+2025,ME,faculty,all,1058,305,1363,0.22377109317681584,detail,ME,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male ME,faculty:ME
+2025,TPM,faculty,all,285,139,424,0.3278301886792453,detail,TPM,,,recorded,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2025; Female/Male TPM,faculty:TPM
+2025,Sum of faculty influx,faculty_sum,all,4337,2027,6364,0.31851037083595224,derived_total,,,,derived,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2025; sum of eight faculty rows,faculty_sum:all
+2026,ABE,faculty,all,335,529,864,0.6122685185185185,detail,ABE,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male ABE,faculty:ABE
+2026,AE,faculty,all,406,116,522,0.2222222222222222,detail,AE,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male AE,faculty:AE
+2026,AS,faculty,all,541,340,881,0.3859250851305335,detail,AS,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male AS,faculty:AS
+2026,CEG,faculty,all,466,238,704,0.3380681818181818,detail,CEG,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male CEG,faculty:CEG
+2026,EEMCS,faculty,all,1234,300,1534,0.19556714471968709,detail,EEMCS,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male EEMCS,faculty:EEMCS
+2026,IDE,faculty,all,196,255,451,0.565410199556541,detail,IDE,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male IDE,faculty:IDE
+2026,ME,faculty,all,1165,321,1486,0.21601615074024227,detail,ME,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male ME,faculty:ME
+2026,TPM,faculty,all,295,162,457,0.3544857768052516,detail,TPM,,,current_snapshot_2026-11-01,first_time_faculty_influx,2012-2026/Influx studenten.pdf,Page 1,2026; Female/Male TPM,faculty:TPM
+2026,Sum of faculty influx,faculty_sum,all,4638,2261,6899,0.32772865632700393,derived_total,,,,current_snapshot_2026-11-01,sum_of_faculty_influx_not_deduplicated_institution_total,2012-2026/Influx studenten.pdf,Page 1,2026; sum of eight faculty rows,faculty_sum:all
