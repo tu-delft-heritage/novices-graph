@@ -6,3 +6,21 @@ src/data/students.json
 playwright-report/
 test-results/
 .DS_Store
+
+# Local source documents; normal app builds use the master CSVs below.
+/data/**/*.xlsx
+/data/**/*.xls
+/data/**/*.xlsm
+/data/**/*.pdf
+/data/**/*.svg
+
+# Local workbooks and other generated analysis artifacts.
+/outputs/
+/data/processed/*
+
+# Required by prepare:data and tests, including in GitHub Actions.
+!/data/processed/master-1905-2001.csv
+!/data/processed/master-2002-2011.csv
+!/data/processed/master-2012-2026.csv
+!/data/processed/entity-mapping.csv
+!/data/processed/README.md
