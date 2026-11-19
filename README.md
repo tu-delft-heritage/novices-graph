@@ -1,17 +1,17 @@
 # First-year students at TU Delft
 
-An Observable Framework site using D3 and Observable Plot: annual first-year student counts, a separate percentage axis, historical markers, styling controls, SVG/JPG images, and CSV/JSON data downloads. The source data cover 1905–2018.
+An Observable Framework explorer using D3 and Observable Plot, covering **1905–2026**. It includes four graph views, English/Dutch labels, faculty grouping, styling controls, SVG/JPG images and CSV/JSON downloads. The page uses Framework's default theme and Observable Inputs; custom CSS handles layout only.
 
 ## Develop with pnpm
 
-Use Node.js 24 (see `.nvmrc`) and pnpm 10.22.0 (pinned in `package.json`). If pnpm is not already installed, use `corepack enable`.
+Use Node.js 24 (`.nvmrc`) and pnpm 10.22.0 (`package.json`).
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open the URL printed by Observable, normally `http://127.0.0.1:3000`. The default commands prepare the data before starting the preview or building the site.
+Open the URL printed by Observable, normally `http://127.0.0.1:3000`. Preview and production builds prepare the browser data automatically.
 
 ```sh
 pnpm test
@@ -20,66 +20,72 @@ pnpm exec playwright install chromium
 pnpm test:browser
 ```
 
-The browser checks run against `dist/` at `/novices-graph/`, exercising GitHub Pages subpath hosting, controls, zero-count years, mobile layout, and actual SVG/JPG/CSV/JSON downloads. Run `pnpm build` after changing source files before rerunning browser tests. `node scripts/serve-built.js` also lets you inspect the production build at `http://127.0.0.1:4173/novices-graph/`.
+Browser checks use `dist/` at `/novices-graph/`, testing subpath hosting, all four views, grouping, languages, styling, missing counts, mobile layout and real downloads. Rebuild after source changes. `node scripts/serve-built.js` serves the same production preview on port 4173.
 
-## Use the explorer
+## Explorer controls
 
-The page uses Observable Framework's default theme and standard Observable Inputs. Custom CSS is limited to layout; background, typography, and control styling follow Framework. Essential caveats are grouped under **Data notes**.
+- **Data → Language / Taal** switches between English and Dutch, including captions, labels, tooltips, number formatting and image exports. Counts, styling and custom titles stay intact. Reset keeps the selected language.
+- **View** selects women by programme, women and men, all students by programme, or men by programme. Programme views use the original programme/historical categories through 2001 and recorded faculty categories from 2002. The percentage line always shows the share of women.
+- **From / To** select an inclusive range through 2026. Crossing the endpoints moves the other endpoint too.
+- **Group programmes by faculty**, off by default, applies `optional_faculty_group` from the mapping. Mapped historical programme counts join the later faculty series under stable faculty IDs. Unmapped `Alle lessen`, `Enkele lessen` and `IJker` remain separate. This is a display grouping, not a claim about historical faculty ownership or exclusive programme ownership. Joint relationships do not duplicate counts.
+- The focus dropdown follows the grouping mode. Enabling grouping on a historical programme selects its mapped faculty. Disabling it retains that faculty's original source series, which starts in 2002; select a historical programme to return to its original detail.
+- **Undefined percentages as 0**, enabled by default, affects percentages only. Counts always retain the distinction between missing values and recorded zeros.
+- **Appearance**, **Layers**, **Fine adjustments** and **Category/Faculty colours** control bars/areas, palettes, individual colours, typography, background, axes, line, grid, markers, legend and opacity. The women/men comparison has separate sex colours. Changing palettes clears colour overrides.
+- Hover over the graph or use **Inspect year** for counts and a category/faculty breakdown. Totals from 2012 are labelled as faculty sums.
+- **Image export** contains SVG/JPG downloads and image dimensions, resolution and quality. Exports include source, grouping, counting-scope and snapshot notes. JPG exports above 32 megapixels are disabled. Dutch image filenames end in `-nl`; grouped exports include `-grouped-by-faculty`.
+- **Data export** contains CSV/JSON downloads that follow the chosen range, focus and grouping. Styling and language do not change exported data.
 
-- Choose an inclusive year range. Moving one endpoint beyond the other moves both to that year.
-- **Data → Language / Taal** switches between English (default) and Dutch for all four views, including controls, captions, programme labels, historical markers, tooltips, number formatting, and SVG/JPG exports. Switching preserves the selection and styling; custom titles are kept as entered. Reset keeps the chosen language. Dutch image filenames end in `-nl`; CSV/JSON retain the original source programme names, schema, and numeric values in either language.
-- Under **Data → View**, choose **Women by programme**, **Women and men** (recorded totals), **All students by programme** (female plus male counts per programme), or **Men by programme**. All four views support bars and areas, faculty selection, styling, and exports. Programme views share the programme palette and colour overrides; the comparison of recorded totals has separate colours for women and men. The percentage line always shows the share of women, including in the male-only view.
-- The default graph title follows the view and selected years; a manually edited title is preserved. The description also follows the selected view.
-- Under **Data**, select **All faculties / afdelingen** or one original faculty/afdeling category. The graph, year values, breakdown, and exports follow this selection, and the vertical axis rescales. Categories before and after 2002 remain separate, as supplied in the source files.
-- A focused percentage uses female and male counts for that same category. The eight newer faculty categories have no matching male series in the source; their male counts are shown as unavailable.
-- **Undefined percentages as 0** is enabled by default under **Data**. Missing counts or zero denominators use 0% in the chart, year values, and all exports. Turn it off to restore gaps and undefined shares. Source counts remain unchanged.
-- Switch between stacked bars and stacked areas. Change the title, palette, background, text/axis colour, percentage-line colour, font, font size, bar spacing, opacity, and line width. Expand **Programme colours** to override individual series. Choosing a palette clears those overrides.
-- Toggle the percentage line, grid, historical markers, and legend. Programme views list relevant programmes in the selected period; the comparison of recorded totals lists women and men.
-- Hover over the graph or use the keyboard-accessible **Inspect year** select to read totals and the programme breakdown.
-- Under **Image export**, set the SVG width and plot height and download SVG or JPG images. The complete image height also includes the title, legend, and source note; dimensions are shown with the export controls.
-- Download an editable, self-contained SVG or a JPG with the same styling. JPG supports 1×, 2×, and 3× resolution plus adjustable quality; exports above 32 megapixels are disabled. Fonts use portable system stacks; exact glyphs can vary across computers. Exports have the chosen solid background.
-- Under **Data export**, **Download CSV** and **Download JSON** export the selected years and faculty/afdeling, including zero-count categories. JSON includes the source, selection, annual `totals`, per-year `programmes`, and the `undefined_shares_as_zero` setting. CSV combines those records with `record_type` set to `selection_total` or `programme`; filter by that column before aggregating to avoid counting totals twice. `female_share` is a fraction from 0 to 1 and follows **Undefined percentages as 0**. With that option off, undefined shares are `null` in JSON and blank in CSV. Missing counts always stay `null`/blank, while recorded zeros remain `0`. `programme_female_total` keeps programme sums distinct from recorded female totals. Styling options do not affect data downloads.
-- **Reset** restores the original styling. Settings last for the current page session.
+## Data sources and interpretation
 
-## Data and interpretation
-
-The source files are `data/female_at_tu.json`, `data/male_at_tu.json`, and `data/colors.json`. `scripts/prepare-data.js` reads them and writes a generated, ignored `src/data/students.json` for Framework's `FileAttachment`. After editing a source file, rerun `pnpm prepare:data` during preview (or restart `pnpm dev`). Every production build regenerates it. Alternate historical JSON files are preserved in `data/archive/` and are not used or published.
-
-The dataset contains 28 programme names across 114 years. The legacy exclusions (`alle lessen`, `enkele lessen`, `ijker`, `nan`, and `Totaal`) are retained when selecting programme series. Names and counts are not corrected or merged. Some programme sums do not match the recorded female totals, including 1905 (9 by programme versus 22 recorded). Bars use programme counts; the line uses `female total / (female total + male total)`, joined by year. Missing totals and zero denominators make the percentage undefined, including 1944. The default setting substitutes 0% for these shares without modifying the source data; disabling it leaves gaps. The programme classification changes in 2002.
-
-The **Women and men** view uses recorded totals rather than programme sums: for example, 1905 has 22 women and 247 men, and 2018 has 1,853 women and 4,078 men. Both total series cover all 114 years. Matching male counts are unavailable for the eight newer faculty categories; a focused comparison leaves those male counts missing, shows a note, and reports the combined total as unavailable. The zero-percentage option does not fill missing counts. CSV and JSON include both female and male columns in all four views.
-
-The two additional programme views use male programme counts directly or add female and male counts for each matching programme. A combined programme count is unknown if either component is missing. An incomplete active programme makes that year's stack unavailable, so the chart leaves a gap instead of showing a partial stack as a complete total. In the supplied data, the newer faculties have no male breakdowns in 2002–2018; these years are blank in the two new views, with a note in the page and image exports. Recorded totals and the percentage line remain available. Restricting the range to 1905–2001 shows the available historical programme breakdown. The inspector's programme sum follows the selected view; CSV and JSON preserve all recorded female and male values, including known counts in incomplete years.
-
-Historical markers retain the original events. The Second World War marker starts at 1939, correcting the old graph's 1938 start. The chart uses linear interpolation between annual values. The app's data notes explain the count discrepancies. Image and JSON exports include a source reference.
-
-## Repository layout
+`scripts/prepare-data.js` reads these files:
 
 ```text
-data/                     Source JSON files
-  archive/                Unused historical dataset variants
-src/                      Observable page and chart components
-  data/students.json      Generated browser dataset (ignored)
-scripts/                  Data preparation and production preview server
-test/                     Data, export, and browser checks
-.github/workflows/        GitHub Pages build and deployment
-dist/                     Generated static site (ignored)
+data/processed/master-1905-2001.csv
+data/processed/master-2002-2011.csv
+data/processed/master-2012-2026.csv
+data/processed/entity-mapping.csv
+data/colors.json
 ```
 
-The old standalone pages, scripts, CanvasJS bundle and examples, and Jekyll/Ruby dependencies have been removed. The remaining dependencies support Observable Framework, Observable Plot, D3, and Playwright. Start the app with `pnpm dev`.
+It validates counts, total rows, unique year/entity keys and unambiguous grouping keys, then writes ignored `src/data/students.json` for Framework's `FileAttachment`. Run `pnpm prepare:data` after editing a master during preview. No Python or spreadsheet runtime is needed for the app or GitHub Actions build.
+
+The masters provide **122 years and 31 original categories**. Faculty grouping has eight faculty series and three separate historical categories. Total rows are kept separate from detail and never added into stacks. In 1905, all source categories together contain 22 women and 247 men. The supplied 2002 master contains 439 women and 1,647 men. The latest 2026 snapshot contains 2,261 women and 4,638 men across faculty rows.
+
+Blank historical category cells stay missing. The recorded annual total is zero in 1944, but the detail cells are blank; grouped category counts stay unknown in that year. A partially known count does not become a zero when grouped. All-blank categories do not contribute to sums of other observed categories. Area series contain explicit missing-year points to prevent interpolation across unavailable years.
+
+The authoritative recent data come from the supplied PDF/SVG pair, superseding the older 2012–2018 workbook. From 2012, annual totals are **sums of faculty influx**, not verified deduplicated university headcounts. **2026 is the snapshot of 1 November**, not a confirmed final year. Source definitions and observation dates change over time. The page and image exports identify these limits.
+
+Git ignores source Excel/PDF/SVG documents, `outputs/`, and auxiliary processed analysis files. The three master CSVs, mapping CSV and analysis README are explicitly retained. Keep the four runtime CSVs in commits so fresh clones and GitHub Actions can build; the source documents are only needed to regenerate the analysis and must be backed up separately.
+
+Incomplete programme detail from the separate analysis sheets is not mixed into the masters: bachelor/master programme counts are available only for 2011, bridging counts for 2006–2011, and the 2012–2018 cache contains faculty-phase aggregates. See [the data analysis](data/processed/README.md) for coverage, comparison results and mapping evidence.
+
+Legacy `female_at_tu.json`, `male_at_tu.json` and `data/archive/` remain reference material and are no longer loaded. The source spreadsheets and PDF/SVG remain unchanged. The existing palette is reused for corresponding source categories and faculty groups.
+
+## Data download schema
+
+JSON schema version 2 contains:
+
+- `selection`: inclusive years, stable `entity_id` (or null), and `grouping` (`source` or `faculty`).
+- `totals`: selected annual counts, total, percentage and `total_basis` (`institution`, `faculty_sum` or `selection`).
+- `programmes`: the selected category records, including blank/inactive source rows, with stable IDs, labels, level, counts and source metadata.
+- `source_records`: only for grouped downloads; the underlying original rows, preserving source labels, workbook/PDF locations and counts.
+- `notes`, `share_unit` and `undefined_shares_as_zero`: interpretation and display settings.
+
+CSV contains the same information per record, with `record_type` equal to `selection_total`, `category` or `source_record`. **Filter by record type before summing**; grouped source records explain the category sums and are not extra students. `members` lists contributing entity IDs. `female_share` is a fraction; undefined shares follow the zero option. Missing counts remain JSON null / blank CSV cells; recorded zeros stay numeric zero. Labels and IDs do not change with display language.
 
 ## GitHub Pages publishing
 
-`.github/workflows/publish.yml` installs dependencies with pnpm's frozen lockfile, runs unit tests, builds Framework, and runs Chromium checks against the built site. Pushes to `main` and manual runs on `main` then upload `dist/` and publish it using the official GitHub Pages actions. Pull requests to `main` and manual runs on other branches validate without deploying. New commits cancel outdated pull request checks; an active deployment is allowed to finish.
+`.github/workflows/publish.yml` installs with pnpm's frozen lockfile, runs unit tests and builds Framework. Pushes to `main` and manual runs on `main` upload `dist/` and publish through GitHub Pages actions. Pull requests validate without deploying. The committed master CSVs and mapping must accompany the app changes; the workflow does not regenerate them from the source workbooks.
 
-One-time repository setup:
+Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The expected site is `https://tu-delft-heritage.github.io/novices-graph/`. `PAGES_BASE_PATH` records the repository path; use `/` for a custom domain or account-root Pages site. No hosting credentials are needed beyond the workflow's scoped `GITHUB_TOKEN`.
 
-1. In **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**.
-2. Merge this feature branch into `main` and push it to GitHub.
-3. Open the **Build and publish Observable** workflow to follow the deployment.
-
-The repository's expected Pages URL is `https://tu-delft-heritage.github.io/novices-graph/`. The workflow uses `GITHUB_TOKEN` with deployment permissions scoped to the deploy job; no personal token or Observable hosting account is needed. This change supplies the workflow; it does not alter repository settings or publish the site itself.
-
-Framework generates relative asset links, and `PAGES_BASE_PATH` records the repository path in configuration. For a custom domain or an account-root Pages repository, set that workflow value to `/`.
-
-References: [Observable Framework deployment](https://observablehq.github.io/framework/deploying), [Observable Plot](https://observablehq.github.io/plot/), [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+```text
+data/                     Original sources and reference JSON
+  processed/              Master CSVs, mapping, detail and analysis
+src/                      Observable page and chart components
+  data/students.json      Generated browser dataset (ignored)
+scripts/                  Data preparation and preview server
+test/                     Data, export and browser checks
+.github/workflows/        GitHub Pages build and deployment
+dist/                     Generated static site (ignored)
+```
